@@ -68,22 +68,33 @@ foreach($p in 'superpowers@claude-plugins-official','frontend-design@claude-plug
 
 # 5) Config copy with backup -------------------------------------------------
 Step "5/7 Config -> ~/.claude (with backup)"
-$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md')
+$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md','hooks/threebrain-after-task.js')
+$mergeJs = Join-Path $root 'merge-settings.js'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $backup = Join-Path $claudeDir "backup/$stamp"
 foreach($rel in $files){
   $srcF = Join-Path $homeSnap $rel
   $dstF = Join-Path $claudeDir $rel
   if(-not (Test-Path $srcF)){ Warn "snapshot missing $rel (skip)"; continue }
-  if($Check){ Would "copy $rel -> ~/.claude/$rel (backup existing first)"; continue }
+  if($Check){
+    if($rel -eq 'settings.json'){ Would "merge settings.json -> ~/.claude/settings.json (backup first; preserves local keys like permissions.allow)" }
+    else { Would "copy $rel -> ~/.claude/$rel (backup existing first)" }
+    continue
+  }
   if(Test-Path $dstF){
     $b = Join-Path $backup $rel
     New-Item -ItemType Directory -Force -Path (Split-Path $b) | Out-Null
     Copy-Item $dstF $b -Force
   }
   New-Item -ItemType Directory -Force -Path (Split-Path $dstF) | Out-Null
-  Copy-Item $srcF $dstF -Force
-  Ok "wrote ~/.claude/$rel"
+  if($rel -eq 'settings.json'){
+    node $mergeJs $srcF $dstF
+    if($LASTEXITCODE -eq 0){ Ok "merged ~/.claude/settings.json (local keys preserved)" }
+    else { Warn "settings.json merge failed ($LASTEXITCODE) - writing snapshot as-is"; Copy-Item $srcF $dstF -Force }
+  } else {
+    Copy-Item $srcF $dstF -Force
+    Ok "wrote ~/.claude/$rel"
+  }
 }
 if(-not $Check -and (Test-Path $backup)){ Info "backed up prior config to $backup" }
 

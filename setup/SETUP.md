@@ -32,10 +32,19 @@ the `setup-brain` skill runs the script and walks you through the logins.
 4. **Plugins (user scope)** — installs + enables `superpowers`, `frontend-design`, `codex`,
    `cc-gemini-plugin`, `ai-brain`.
 5. **Config → `~/.claude`** — backs up any existing files to `~/.claude/backup/<timestamp>/`, then
-   writes `settings.json` (clean curated), `statusline-command.js`, `keybindings.json`, `CLAUDE.md`,
-   `commands/dream.md`.
+   writes `statusline-command.js`, `keybindings.json`, `CLAUDE.md`, `commands/dream.md`, and
+   `hooks/threebrain-after-task.js`. `settings.json` is **merged** (not overwritten) via
+   `merge-settings.js`, so your local keys — notably the `permissions.allow` list — are preserved
+   across re-runs while the curated keys (plugins, marketplaces, hooks) are applied.
 6. **`clauded` launcher** — PowerShell `$PROFILE` function, `~/.bashrc` alias, and
    `~/.local/bin/clauded.cmd` (all = `claude --dangerously-skip-permissions`).
+
+### End-of-task threebrain prompt
+The snapshot installs a `Stop` hook (`~/.claude/hooks/threebrain-after-task.js`) that, **after any
+task that changed code/files**, asks via a menu whether to run a threebrain pass over the changes:
+**Simplify** (`/simplify`) · **Review** (`/codex:review`) · **Both** · **No**. It stays silent on
+read-only / Q&A tasks, and guards against re-prompting loops (`stop_hook_active` + a transcript
+marker). Activates from the next session (Claude Code may show a one-time hook-approval prompt).
 
 ## Manual steps (guided — nothing is stored)
 | # | Step | How |

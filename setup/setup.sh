@@ -62,13 +62,23 @@ done
 
 # 5) Config copy with backup
 step "5/7 Config -> ~/.claude (with backup)"
-STAMP="$(date +%Y%m%d-%H%M%S)"; BK="$CLAUDE_DIR/backup/$STAMP"
-for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md; do
+STAMP="$(date +%Y%m%d-%H%M%S)"; BK="$CLAUDE_DIR/backup/$STAMP"; MERGE_JS="$ROOT/merge-settings.js"
+for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md hooks/threebrain-after-task.js; do
   src="$SNAP/$rel"; dst="$CLAUDE_DIR/$rel"
   [ -f "$src" ] || { warn "snapshot missing $rel"; continue; }
-  if [ $CHECK -eq 1 ]; then would "copy $rel -> ~/.claude/$rel (backup existing first)"; continue; fi
+  if [ $CHECK -eq 1 ]; then
+    if [ "$rel" = "settings.json" ]; then would "merge settings.json -> ~/.claude/settings.json (backup first; preserves local keys like permissions.allow)"
+    else would "copy $rel -> ~/.claude/$rel (backup existing first)"; fi
+    continue
+  fi
   if [ -f "$dst" ]; then mkdir -p "$(dirname "$BK/$rel")"; cp "$dst" "$BK/$rel"; fi
-  mkdir -p "$(dirname "$dst")"; cp "$src" "$dst"; ok "wrote ~/.claude/$rel"
+  mkdir -p "$(dirname "$dst")"
+  if [ "$rel" = "settings.json" ]; then
+    if node "$MERGE_JS" "$src" "$dst"; then ok "merged ~/.claude/settings.json (local keys preserved)"
+    else warn "settings.json merge failed - writing snapshot as-is"; cp "$src" "$dst"; fi
+  else
+    cp "$src" "$dst"; ok "wrote ~/.claude/$rel"
+  fi
 done
 [ $CHECK -eq 0 ] && [ -d "$BK" ] && cyan "backed up prior config to $BK"
 

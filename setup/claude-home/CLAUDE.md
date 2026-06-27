@@ -15,3 +15,7 @@ icon system/library, advise tracing to SVG.
 See the **threebrain** skill for the orchestration model: Codex for review / adversarial / rescue,
 Gemini for large-context or multimodal analysis, media-gen for visual generation. One delegate per
 task; pass the user's phrasing through; serialize browser work.
+
+After finishing any task that **changed code**, offer a threebrain pass over the changes —
+**Simplify** (`/simplify`) · **Review** (`/codex:review`) · **Both** · **No**. This is enforced by the
+`threebrain-after-task` Stop hook; stay silent on read-only / Q&A tasks.

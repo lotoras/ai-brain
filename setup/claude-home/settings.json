@@ -26,6 +26,15 @@
       "source": { "source": "github", "repo": "lotoras/ai-brain" }
     }
   },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node ~/.claude/hooks/threebrain-after-task.js" }
+        ]
+      }
+    ]
+  },
   "effortLevel": "xhigh",
   "skipDangerousModePermissionPrompt": true,
   "useAutoModeDuringPlan": false,
