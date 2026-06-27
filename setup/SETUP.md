@@ -40,10 +40,12 @@ the `setup-brain` skill runs the script and walks you through the logins.
    `~/.local/bin/clauded.cmd` (all = `claude --dangerously-skip-permissions`).
 
 ### End-of-task threebrain prompt
-The snapshot installs a `Stop` hook (`~/.claude/hooks/threebrain-after-task.js`) that, **after any
-task that changed code/files**, asks via a menu whether to run a threebrain pass over the changes:
-**Simplify** (`/simplify`) · **Review** (`/codex:review`) · **Both** · **No**. It stays silent on
-read-only / Q&A tasks, and guards against re-prompting loops (`stop_hook_active` + a transcript
+The snapshot installs a `Stop` hook (`~/.claude/hooks/threebrain-after-task.js`) that, **only when the
+task is confirmed to have changed code** (an `Edit`/`Write`/`MultiEdit`/`NotebookEdit` tool call since
+the last user turn), asks via a menu whether to run a threebrain pass over the changes:
+**Simplify** (`/simplify`) · **Review** (`/codex:review`) · **Both** · **No**. It's a strict
+allow-list — it stays silent on read-only / Q&A tasks **and** whenever it can't inspect history
+(no/unreadable transcript) — and guards against re-prompting loops (`stop_hook_active` + a transcript
 marker). Activates from the next session (Claude Code may show a one-time hook-approval prompt).
 
 ## Manual steps (guided — nothing is stored)
