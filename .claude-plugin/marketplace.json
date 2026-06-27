@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ai-brain",
+  "description": "Luka's personal cross-project skills: media generation, icon brand-recoloring, model routing, prompt enhancement.",
+  "owner": { "name": "lotoras" },
+  "plugins": [
+    {
+      "name": "ai-brain",
+      "description": "Personal toolbox: generate images/videos via browser ChatGPT/Gemini, recolor icons to the UPD brand gradient, route review/analysis to Codex/Gemini, enhance prompts.",
+      "version": "0.1.0",
+      "author": { "name": "lotoras" },
+      "source": "./plugins/ai-brain",
+      "category": "productivity",
+      "keywords": ["image-generation", "video", "icons", "branding", "routing", "prompt"],
+      "homepage": "https://github.com/lotoras/ai-brain",
+      "repository": "https://github.com/lotoras/ai-brain"
+    }
+  ]
+}
