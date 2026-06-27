@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [],
+    "deny": [],
+    "defaultMode": "bypassPermissions"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/statusline-command.js"
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "codex@openai-codex": true,
+    "cc-gemini-plugin@cc-gemini-plugin": true,
+    "ai-brain@ai-brain": true
+  },
+  "extraKnownMarketplaces": {
+    "openai-codex": {
+      "source": { "source": "github", "repo": "openai/codex-plugin-cc" }
+    },
+    "cc-gemini-plugin": {
+      "source": { "source": "github", "repo": "thepushkarp/cc-gemini-plugin" }
+    },
+    "ai-brain": {
+      "source": { "source": "github", "repo": "lotoras/ai-brain" }
+    }
+  },
+  "effortLevel": "xhigh",
+  "skipDangerousModePermissionPrompt": true,
+  "useAutoModeDuringPlan": false,
+  "tui": "fullscreen"
+}
