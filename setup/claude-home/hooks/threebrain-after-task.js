@@ -56,9 +56,9 @@ function ask() {
     MARKER + ': This task changed code. Before you finish, do NOT stop yet —',
     'ask the user with the AskUserQuestion tool (header "threebrain",',
     'question "Run a threebrain pass over what just changed?") offering exactly these options:',
-    '"Simplify" — run /simplify on the code you just changed;',
-    '"Review" — look the changes over for bugs/issues via threebrain (/codex:review);',
-    '"Both" — run /simplify, then /codex:review;',
+    '"Simplify" — run /simplify on the code you just changed as a Fable 5 pass (if the session model is not Fable 5, dispatch the pass to a subagent with model "fable");',
+    '"Review" — trigger the Codex review (/codex:review) by delegating the handoff to a subagent with model "sonnet" — Sonnet only triggers and relays the Codex review, it never reviews the code itself;',
+    '"Both" — run both: Simplify, then Review;',
     '"No" — skip and stop.',
     'Then act on the choice, routing silently per the threebrain skill. If the user picks "No", just stop.'
   ].join(' ');

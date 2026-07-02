@@ -16,6 +16,10 @@ See the **threebrain** skill for the orchestration model: Codex for review / adv
 Gemini for large-context or multimodal analysis, media-gen for visual generation. One delegate per
 task; pass the user's phrasing through; serialize browser work.
 
-After finishing any task that **changed code**, offer a threebrain pass over the changes —
-**Simplify** (`/simplify`) · **Review** (`/codex:review`) · **Both** · **No**. This is enforced by the
-`threebrain-after-task` Stop hook; stay silent on read-only / Q&A tasks.
+After finishing any task that **changed code**, the `threebrain-after-task` Stop hook will ask
+whether to run a threebrain pass — **Simplify** (`/simplify`) · **Review** (`/codex:review`) ·
+**Both** · **No**. Let the hook be the single ask: do **not** also offer a threebrain pass in prose
+yourself. Stay silent on read-only / Q&A tasks (the hook stays silent there too). Models for the
+pass: **Simplify** runs on **Fable 5** (dispatch a `model: "fable"` subagent if the session isn't on
+Fable 5); **Review** is done by **Codex**, triggered/relayed by a **Sonnet** subagent — Sonnet never
+reviews the code itself.

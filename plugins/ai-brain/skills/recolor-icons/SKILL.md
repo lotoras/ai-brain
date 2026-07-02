@@ -23,6 +23,12 @@ python "...\recolor-icons\recolor-solid.py" <file-or-folder> [#hexcolor]
 # 3. GRADIENT recolor (opt-in). Optional endpoints; default #006b6e -> #a8d680
 python "...\recolor-icons\recolor.py" <file-or-folder> [#startHex #endHex]
 #    -> <name>-gradient.png
+
+# 4. TWO-TONE recolor — replace ONE color, KEEP the others + transparency.
+#    For multi-color logos (e.g. Office icons: green body + white glyph). Both
+#    fromColor and keepColor auto-detect; pass hex to override either.
+python "...\recolor-icons\recolor-replace.py" <file-or-folder> [#newColor] [#fromColor] [#keepColor]
+#    -> <name>-recolored.png
 ```
 
 ## Decision tree — when to recolor, ask, or leave dark
@@ -32,9 +38,14 @@ Apply this whenever an icon could be recolored (including the `media-gen` icon f
 1. **No recolor requested** → **leave it dark.** Deliver the icon dark-on-transparent:
    run `transparent-bg.py` only. Do **not** auto-apply any brand color.
 2. **Recolor requested WITH a specific color** (e.g. "recolor petrol", "make it teal",
-   "brand color", "#ff8800") → **solid** recolor in that color via `recolor-solid.py <file> <hex>`.
-   Map names/brand terms to hex first (brand/UPD/petrol = `#006b6e`; mid-green = `#a8d680`;
-   common CSS color names → their hex).
+   "brand color", "#ff8800") → recolor in that color. Map names/brand terms to hex first
+   (brand/UPD/petrol = `#006b6e`; mid-green = `#a8d680`; common CSS color names → their hex).
+   Then pick the mode by how many colors the icon has:
+   - **Monochrome** (single ink color, the rest transparent) → **solid** via
+     `recolor-solid.py <file> <hex>`.
+   - **Multi-color** (a colored shape PLUS white/other detail you must keep, e.g. the
+     Office logos) → **two-tone** via `recolor-replace.py <file> <hex>`. Do NOT use
+     `recolor-solid.py` here — it paints every opaque pixel and flattens the white detail.
 3. **Recolor requested WITH "gradient"** (e.g. "recolor with gradient", "brand gradient",
    "gradient from X to Y") → `recolor.py` (default Petrol→green, or the named endpoints).
 4. **"recolor" with NO color and NO "gradient"** (just "recolor it") → **ASK which color**
@@ -45,19 +56,28 @@ Solid is the default recolor mode; gradient only happens when the user says "gra
 ## How the recolor works
 Each opaque pixel keeps its alpha (anti-aliasing preserved). Solid replaces RGB with one
 color; gradient projects each pixel onto the icon's bounding-box diagonal (bottom-left
-start → top-right end). `transparent-bg.py` derives alpha from inverse luminance, so it
-needs a light background to key against.
+start → top-right end); two-tone (`recolor-replace.py`) projects each pixel onto the
+fromColor→keepColor axis and remaps fromColor→newColor, so the kept color and clean edges
+survive. `transparent-bg.py` derives alpha from inverse luminance, so it needs a light
+background to key against.
 
 ## Gotchas
-- **Knock out the background first.** Generated raster icons aren't transparent — ChatGPT's
-  "full size" PNG is flattened onto **near-white**, Gemini renders on **white**. Recoloring
-  those directly floods the whole square and the icon disappears. Always `transparent-bg.py`
-  first, then recolor the resulting `-transparent.png`.
+- **Check transparency BEFORE knocking out the background.** If the source already has a real
+  alpha channel, **skip `transparent-bg.py`** — re-keying an already-transparent icon off
+  luminance damages its edges (and on a mid-tone icon makes the whole thing semi-transparent).
+  Quick check: `python -c "from PIL import Image; import numpy as np; a=np.array(Image.open(r'PATH').convert('RGBA'))[:,:,3]; print('already_transparent', (a<255).mean()>0.02)"`.
+- **Knock out the background only for FLATTENED raster.** ChatGPT's "full size" PNG is flattened
+  onto **near-white** and Gemini renders on **white** (no alpha). For those, run
+  `transparent-bg.py` first, then recolor the resulting `-transparent.png`; otherwise the
+  recolor floods the whole square and the icon disappears.
+- **Monochrome vs multi-color.** `recolor-solid.py` paints **every** opaque pixel one color —
+  correct only for a single-color icon. For a multi-color icon (colored shape + white/other
+  detail) use `recolor-replace.py`, which remaps one color and preserves the rest.
 - **Recolor the `-transparent` file explicitly**, not a mixed folder. A single passed file is
   always processed; folder mode skips only the script's own output suffix, so running a recolor
   over a folder that still contains raw white-bg originals would flood those. Pass the specific
   `-transparent.png` (the `media-gen` icon-by-icon flow does this).
-- Suffixes are stackable and re-run-safe: `-transparent`, `-solid`, `-gradient`.
+- Suffixes are stackable and re-run-safe: `-transparent`, `-solid`, `-gradient`, `-recolored`.
 
 ## Brand palette
 - Petrol `#006b6e` (RAL 5021), mid-green `#a8d680` (saturated variant of Weissgrün `#cce9a4`).

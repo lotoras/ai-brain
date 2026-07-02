@@ -6,12 +6,12 @@
   "plugins": [
     {
       "name": "ai-brain",
-      "description": "Personal toolbox: generate images/videos via browser ChatGPT/Gemini, recolor icons to the UPD brand gradient, route review/analysis to Codex/Gemini, enhance prompts.",
-      "version": "0.1.0",
+      "description": "Personal toolbox: generate images/videos via browser ChatGPT/Gemini, recolor icons to the UPD brand gradient, route review/analysis to Codex/Gemini, enhance prompts, provision the architect/coder/testing agent lineup into any project.",
+      "version": "0.2.0",
       "author": { "name": "lotoras" },
       "source": "./plugins/ai-brain",
       "category": "productivity",
-      "keywords": ["image-generation", "video", "icons", "branding", "routing", "prompt"],
+      "keywords": ["image-generation", "video", "icons", "branding", "routing", "prompt", "agents", "provisioning"],
       "homepage": "https://github.com/lotoras/ai-brain",
       "repository": "https://github.com/lotoras/ai-brain"
     }
