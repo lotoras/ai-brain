@@ -14,11 +14,16 @@ fixed; the stack only flavors names, descriptions, conventions, and commands:
 
 | Function | Agent(s) | Tools | Model |
 |---|---|---|---|
-| **Think** (plan/design) | `<domain>-architect` | read-only + explore dispatch: `Bash, Read, Glob, Grep, Agent(Explore, general-purpose)` | `fable` |
+| **Think** (plan/design) | `<domain>-architect` | read-only + explore dispatch: `Bash, Read, Glob, Grep, Agent(Explore, general-purpose)` | `opus` (Fable-upgradeable) |
 | **Build** (implement) | `<domain>-coder` | read+write: `Bash, Glob, Grep, Read, Edit, Write` | `sonnet` |
-| **Test — plan** | `testing-architect` (+ `browser-testing-architect` if e2e) | read-only | `opus` (for now) |
+| **Test — plan** | `testing-architect` (+ `browser-testing-architect` if e2e) | read-only | `opus` |
 | **Test — write** | `testing-coder` (+ `browser-testing-coder` if e2e) | read+write | `sonnet` |
 | **Explore** (research/info) | `Explore` / `general-purpose` dispatches | — | `haiku`, always |
+
+**Fable-upgradeable** means: the frontmatter default is `opus`, but when the task says to use
+Fable (typically via cc-enhance "use fable"), the main thread dispatches the agent with
+`model: "fable"` — the dispatch-time override beats the frontmatter default. Only domain
+architects are Fable-upgradeable; test planners, coders, and exploration never upgrade.
 
 Split per **layer** only when the project genuinely has more than one (e.g. backend + frontend →
 two architect/coder pairs). A mono-layer project (CLI tool, API-only service, library, script

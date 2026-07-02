@@ -34,6 +34,18 @@ deliver the icon **dark on transparent** unless a color is requested (solid if a
 gradient only if "gradient" is said; ask which color if "recolor" is said with none). Bake this into
 the prompt text — do not add commentary outside the single output block.
 
+## Step 1.6 — Fable upgrade (model routing)
+
+If the user's raw prompt contains a Fable trigger — "use fable", "with fable", "fable 5", "run the
+architects on fable", or similar — the enhanced **Task** must END with exactly this instruction
+(consume the trigger words; do not repeat them as task content):
+
+> Upgrade all Fable-upgradeable agents for this task: dispatch every architect/planner with
+> `model: "fable"` (dispatch-time override; their frontmatter default is Opus). Coders, test
+> writers, test planners, and exploration keep their default models.
+
+Without a trigger, add nothing — architects run on their Opus default.
+
 ## Step 2 — Build the prompt
 
 Emit exactly this structure, filled in from the user's task:

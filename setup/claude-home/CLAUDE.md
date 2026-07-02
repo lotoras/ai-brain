@@ -16,6 +16,11 @@ See the **threebrain** skill for the orchestration model: Codex for review / adv
 Gemini for large-context or multimodal analysis, media-gen for visual generation. One delegate per
 task; pass the user's phrasing through; serialize browser work.
 
+Project agents follow a standard model policy: architects/planners default to **Opus** and are
+**Fable-upgradeable** — upgrade only when the task says to use Fable (typically via cc-enhance
+"use fable"), by dispatching with `model: "fable"` (the dispatch-time override beats the
+frontmatter default). Coders run **Sonnet**; exploration is always **Haiku**.
+
 After finishing any task that **changed code**, the `threebrain-after-task` Stop hook will ask
 whether to run a threebrain pass — **Simplify** (`/simplify`) · **Review** (`/codex:review`) ·
 **Both** · **No**. Let the hook be the single ask: do **not** also offer a threebrain pass in prose

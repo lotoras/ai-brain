@@ -42,11 +42,12 @@ message, multiple `Agent` tool calls), each with only the context relevant to it
 
 ## Reading discipline
 
-The main Claude thread (Fable 5) is for synthesis, trade-offs, planning, and user interaction — the
-domain architects run on Fable 5 too. Test planning ({{TEST_PLANNER_NAMES}}) stays on Opus for now.
-File reading that doesn't contribute to judgment work goes to a **Haiku** sub-agent (`Explore` or
-`general-purpose` dispatched with `model: "haiku"`). Sonnet is reserved for execution by the named
-coders ({{CODER_NAMES}}).
+The main Claude thread is for synthesis, trade-offs, planning, and user interaction. The domain
+architects run on Opus by default and are Fable-upgradeable — when the task says to use Fable,
+dispatch them with `model: "fable"` (the dispatch-time override beats their frontmatter default).
+Test planning ({{TEST_PLANNER_NAMES}}) is always Opus. File reading that doesn't contribute to
+judgment work goes to a **Haiku** sub-agent (`Explore` or `general-purpose` dispatched with
+`model: "haiku"`). Sonnet is reserved for execution by the named coders ({{CODER_NAMES}}).
 
 ### Delegate to Haiku (`model: "haiku"`)
 - Broad / unknown scope — "find every place that does X", "map this area"

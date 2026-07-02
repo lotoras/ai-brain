@@ -1,8 +1,8 @@
 ---
 name: {{DOMAIN}}-architect
-description: "Use this agent for {{STACK}} {{LAYER_LABEL}} PLANNING in {{PROJECT_NAME}} — scoping features, choosing where logic lives ({{LAYER_UNITS}}), evaluating trade-offs, and producing a step-by-step implementation plan that `{{DOMAIN}}-coder` can execute. Reads and reasons — returns a plan, never writes code."
+description: "Use this agent for {{STACK}} {{LAYER_LABEL}} PLANNING in {{PROJECT_NAME}} — scoping features, choosing where logic lives ({{LAYER_UNITS}}), evaluating trade-offs, and producing a step-by-step implementation plan that `{{DOMAIN}}-coder` can execute. Reads and reasons — returns a plan, never writes code. Fable-upgradeable: when the task says to use Fable, dispatch with model \"fable\"."
 tools: Bash, Read, Glob, Grep, Agent(Explore, general-purpose)
-model: fable
+model: opus
 color: {{COLOR}}
 ---
 
