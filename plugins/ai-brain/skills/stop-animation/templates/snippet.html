@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stop Animation</title>
+<style>
+  /*
+   * PLACEHOLDERS (fill before use):
+   *   {{N_FRAMES}}    — integer, total WebP frame count
+   *   {{FRAME_PATH}}  — string, path prefix  e.g. "frames/"
+   *   {{BG}}          — "#RRGGBB" for hex mode, or "transparent" for knockout mode
+   *   {{ASPECT}}      — numeric ratio expression e.g. 16/9 or 4/5
+   *   {{POSTER_PATH}} — e.g. "frames/poster.jpg" (hex) or "frames/poster.png" (transparent)
+   *   {{FINAL_PATH}}  — e.g. "frames/final.jpg"  (hex) or "frames/final.png"  (transparent)
+   *
+   * MODE DRIVERS (set MODE constant below, then strip the two unused if-blocks):
+   *   "scroll"  — scroll-scrub through a 240 vh sticky section
+   *   "loop"    — autoplay ping-pong loop
+   *   "hover"   — animates forward on pointerenter, reverses on leave; click toggles
+   */
+
+  :root { --bg: {{BG}}; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+
+  body {
+    margin: 0;
+    /* hex mode: body background matches the canvas letterbox seamlessly.
+       transparent mode: var(--bg) = "transparent" — page bg shows through. */
+    background: var(--bg);
+  }
+
+  /* ── scroll mode wrapper ─────────────────────────────────────────────── */
+  /* Remove this block (and the matching HTML section) for loop/hover mode. */
+  .anim-section {
+    position: relative;
+    height: 240vh;    /* taller = slower scrub; adjust to taste */
+  }
+  .anim-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ── loop / hover mode wrapper ───────────────────────────────────────── */
+  /* Use .anim-container as the direct parent of the canvas for loop/hover. */
+  .anim-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: {{ASPECT}};
+    overflow: hidden;
+  }
+
+  /* ── shared canvas + loader ──────────────────────────────────────────── */
+  #animCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .anim-loader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    z-index: 5;
+    transition: opacity 0.5s ease;
+    font: 600 12px/1 "Helvetica Neue", Arial, system-ui, sans-serif;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #888;
+  }
+  .anim-loader.hidden { opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<!--
+  SCROLL MODE: use this sticky section.
+  For loop/hover mode: replace the <section> + <div class="anim-sticky"> wrapper
+  with a plain <div class="anim-container"> and remove the .anim-section CSS block.
+-->
+<section class="anim-section" id="animSection">
+  <div class="anim-sticky">
+    <canvas id="animCanvas"></canvas>
+    <div id="animLoader" class="anim-loader">Loading…</div>
+  </div>
+</section>
+
+<script>
+(function () {
+  /* ─── configuration (fill all {{PLACEHOLDER}} values before use) ─────── */
+  var MODE   = "scroll";          /* "scroll" | "loop" | "hover"            */
+  var N      = {{N_FRAMES}};      /* total WebP frame count                  */
+  var BG     = "{{BG}}";          /* "#RRGGBB" or "transparent"              */
+  var BASE   = "{{FRAME_PATH}}";  /* frame path prefix, e.g. "frames/"       */
+  var POSTER = "{{POSTER_PATH}}"; /* e.g. "frames/poster.jpg"               */
+  var FINAL  = "{{FINAL_PATH}}";  /* e.g. "frames/final.jpg"                */
+
+  function src(i) {
+    return BASE + "frame_" + String(i).padStart(4, "0") + ".webp";
+  }
+
+  /* ─── canvas / context ────────────────────────────────────────────────── */
+  var canvas = document.getElementById("animCanvas");
+  var ctx    = canvas.getContext("2d");
+  var loader = document.getElementById("animLoader");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var dpr    = Math.min(window.devicePixelRatio || 1, 2);
+  var imgs   = new Array(N);
+  var loaded = 0, ready = false, curIdx = -1;
+
+  /* ─── draw image (letterbox, shared by poster + frames) ──────────────── */
+  function drawImg(img) {
+    if (BG !== "transparent") {
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    if (!img || !img.complete || !img.naturalWidth) return;
+    var cw = canvas.width, ch = canvas.height;
+    /* default: symmetric 6% padding; raise padT above 0.10 to clear a fixed header */
+    var padT = ch * 0.06, padB = ch * 0.06, padX = cw * 0.06;
+    var aW   = cw - 2 * padX, aH = ch - padT - padB;
+    var s    = Math.min(aW / img.naturalWidth, aH / img.naturalHeight);
+    var w    = img.naturalWidth * s, h = img.naturalHeight * s;
+    ctx.drawImage(img, (cw - w) / 2, padT + (aH - h) / 2, w, h);
+  }
+
+  /* ─── resize ──────────────────────────────────────────────────────────── */
+  function resize() {
+    var r = canvas.getBoundingClientRect();
+    canvas.width  = Math.round(r.width  * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    draw(curIdx < 0 ? 0 : curIdx, true);
+  }
+
+  /* ─── draw frame ──────────────────────────────────────────────────────── */
+  function draw(i, force) {
+    if (i === curIdx && !force) return;
+    var img = imgs[i];
+    if (img && img.complete && img.naturalWidth) {
+      drawImg(img);
+      curIdx = i;
+    } else if (posterImg && !ready) {
+      /* fallback to poster while the frame sequence is still loading */
+      drawImg(posterImg);
+    }
+  }
+
+  /* ─── poster: instant first paint before frame sequence finishes ──────── */
+  var posterImg = null;
+  (function () {
+    var p = new Image();
+    p.onload = function () {
+      posterImg = p;
+      if (curIdx < 0 && !ready) drawImg(p);
+    };
+    p.src = POSTER;
+  }());
+
+  /* ─── lerp rAF (shared by scroll + hover) ────────────────────────────── */
+  /* Smooths frame advances: current eases toward targetFrame at 0.16 damping.
+     Smaller damping = more glide/lag; larger = snappier response. */
+  var targetFrame = 0, curFloat = 0, looping = false;
+  function tick() {
+    looping = false;
+    curFloat += (targetFrame - curFloat) * 0.16;
+    if (Math.abs(targetFrame - curFloat) < 0.35) { curFloat = targetFrame; }
+    else { looping = true; requestAnimationFrame(tick); }
+    draw(Math.round(curFloat));
+  }
+  function seekTo(f) {
+    targetFrame = Math.max(0, Math.min(N - 1, f));
+    if (!looping) { looping = true; requestAnimationFrame(tick); }
+  }
+
+  /* ─── single sync point: called once when ready flips ────────────────── */
+  /* Each MODE driver registers its sync function here; onLoad calls it once. */
+  var syncDriver = null;
+
+  /* ══ MODE DRIVERS — strip the two unused if-blocks when emitting ═══════ */
+
+  /* ── scroll ──────────────────────────────────────────────────────────── */
+  if (MODE === "scroll") {
+    var section = document.getElementById("animSection");
+    function scrollProg() {
+      var r  = section.getBoundingClientRect();
+      var sh = section.offsetHeight - window.innerHeight;
+      return Math.max(0, Math.min(1, -r.top / sh));
+    }
+    function onScroll() {
+      if (reduce || !ready) return;
+      seekTo(scrollProg() * (N - 1));
+    }
+    syncDriver = onScroll;
+    window.addEventListener("scroll", onScroll, { passive: true });
+  }
+
+  /* ── loop ────────────────────────────────────────────────────────────── */
+  /* Ping-pong autoplay: traverses all N frames in ~3 s each direction.
+     Adjust the (N / 3.0) factor to change playback speed. */
+  if (MODE === "loop") {
+    var loopPos = 0, loopDir = 1, lastTs = null;
+    function loopAnimate(ts) {
+      if (ready && !reduce) {
+        if (lastTs !== null) {
+          var dt = (ts - lastTs) / 1000;           /* seconds since last frame */
+          loopPos += loopDir * dt * (N / 3.0);     /* full traverse ≈ 3 s      */
+          if (loopPos >= N - 1) { loopPos = N - 1; loopDir = -1; }
+          if (loopPos <= 0)     { loopPos = 0;     loopDir  =  1; }
+          draw(Math.round(loopPos));
+        }
+        lastTs = ts;
+      }
+      requestAnimationFrame(loopAnimate);
+    }
+    requestAnimationFrame(loopAnimate);
+  }
+
+  /* ── hover ───────────────────────────────────────────────────────────── */
+  /* pointerenter → animate to last frame; pointerleave → animate back to 0.
+     click → toggle (snaps to opposite end, then lerp runs). */
+  if (MODE === "hover") {
+    var hoverParent = canvas.parentElement;
+    hoverParent.style.cursor = "pointer";
+    hoverParent.addEventListener("pointerenter", function () {
+      if (ready) seekTo(N - 1);
+    });
+    hoverParent.addEventListener("pointerleave", function () {
+      if (ready) seekTo(0);
+    });
+    hoverParent.addEventListener("click", function () {
+      if (!ready) return;
+      seekTo(Math.round(curFloat) >= N - 1 ? 0 : N - 1);
+    });
+  }
+
+  /* ══ PRELOAD ══════════════════════════════════════════════════════════ */
+  function onLoad(i) {
+    loaded++;
+    if (i === 0 && curIdx < 0) draw(0, true);
+    if (loaded >= N && !ready) {
+      ready = true;
+      if (loader) loader.classList.add("hidden");
+      /* fire the active driver's sync once so the initial state is correct */
+      if (syncDriver) syncDriver();
+    } else if (!ready && loader) {
+      loader.textContent = "Loading… " + Math.round(loaded / N * 100) + "%";
+    }
+  }
+
+  /* reduced-motion: static final frame only, no sequence loaded */
+  if (reduce) {
+    var fb = new Image();
+    fb.onload = function () {
+      imgs[N - 1] = fb;
+      if (loader) loader.classList.add("hidden");
+      resize();
+      draw(N - 1, true);
+    };
+    fb.src = FINAL;
+    /* collapse the scroll section so the page doesn't have a 240 vh gap */
+    if (MODE === "scroll") {
+      var sec = document.getElementById("animSection");
+      if (sec) sec.style.height = "100vh";
+    }
+  } else {
+    for (var i = 0; i < N; i++) {
+      (function (idx) {
+        var im = new Image();
+        im.onload = im.onerror = function () { onLoad(idx); };
+        im.src = src(idx);
+        imgs[idx] = im;
+      }(i));
+    }
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+}());
+</script>
+
+</body>
+</html>

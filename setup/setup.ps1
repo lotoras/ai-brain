@@ -59,7 +59,7 @@ foreach($m in 'anthropics/claude-plugins-official','openai/codex-plugin-cc','the
 
 # 4) Plugins -----------------------------------------------------------------
 Step "4/7 Plugins (user scope)"
-foreach($p in 'superpowers@claude-plugins-official','frontend-design@claude-plugins-official','codex@openai-codex','cc-gemini-plugin@cc-gemini-plugin','ai-brain@ai-brain'){
+foreach($p in 'superpowers@ai-brain','frontend-design@claude-plugins-official','codex@openai-codex','cc-gemini-plugin@cc-gemini-plugin','ai-brain@ai-brain'){
   if($Check){ Would "claude plugin install $p --scope user (+ enable)"; continue }
   claude plugin install $p --scope user
   claude plugin enable ($p.Split('@')[0]) 2>$null
@@ -68,7 +68,7 @@ foreach($p in 'superpowers@claude-plugins-official','frontend-design@claude-plug
 
 # 5) Config copy with backup -------------------------------------------------
 Step "5/7 Config -> ~/.claude (with backup)"
-$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md','hooks/threebrain-after-task.js')
+$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md','hooks/threebrain-after-task.js','hooks/session-model-guard.js','hooks/fable-edit-guard.js')
 $mergeJs = Join-Path $root 'merge-settings.js'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $backup = Join-Path $claudeDir "backup/$stamp"

@@ -20,10 +20,12 @@ fixed; the stack only flavors names, descriptions, conventions, and commands:
 | **Test — write** | `testing-coder` (+ `browser-testing-coder` if e2e) | read+write | `sonnet` |
 | **Explore** (research/info) | `Explore` / `general-purpose` dispatches | — | `haiku`, always |
 
-**Fable-upgradeable** means: the frontmatter default is `opus`, but when the task says to use
-Fable (typically via cc-enhance "use fable"), the main thread dispatches the agent with
-`model: "fable"` — the dispatch-time override beats the frontmatter default. Only domain
-architects are Fable-upgradeable; test planners, coders, and exploration never upgrade.
+**Fable-upgradeable** means: the frontmatter default is `opus`, but when the task explicitly says
+to use Fable (typically via cc-enhance "use fable") AND the session is NOT running on Fable 5, the
+main thread dispatches the agent with `model: "fable"` — the dispatch-time override beats the
+frontmatter default. In Fable 5 sessions, architects always stay Opus — the orchestrator's plan
+review is the Fable pass; never double-pay for Fable judgment. Only domain architects are
+Fable-upgradeable; test planners, coders, and exploration never upgrade.
 
 Split per **layer** only when the project genuinely has more than one (e.g. backend + frontend →
 two architect/coder pairs). A mono-layer project (CLI tool, API-only service, library, script
@@ -40,6 +42,13 @@ project's `CLAUDE.md`. **Never overwrite an existing file.** Existing agents are
 skipped; if the user explicitly wants one replaced, ask first. This inventory and the detection
 pass in step 2 are independent — dispatch the Explore agent in the same message and inventory
 while it runs.
+
+**Refresh check (already-provisioned projects):** if an existing `.claude/rules/workflow.md` lacks
+the "Token-efficient handoffs" section, the "How to proceed" section, or the file-based handoff
+rules (`.claude/plans` / `.claude/findings`); or if any existing agent file lacks its output/report
+contract block or the plan-file contract (architects writing plans to `.claude/plans/`, coders
+reading plan files first) — add the missing sections non-destructively from the current templates.
+Never clobber project-specific customizations — append or insert only where the section is absent.
 
 ### 2. Detect the project (one Haiku Explore subagent)
 Dispatch a single `Explore` subagent with `model: "haiku"` to report:
@@ -79,6 +88,9 @@ values in the templates are the policy — do not change them.
   workflow rule, propose a merge instead of replacing it.
 - Append the filled `templates/claude-md-section.md` to the project's `CLAUDE.md` (create the file
   with just that section if absent).
+- Ensure `.claude/plans/` and `.claude/findings/` are listed in the project's `.gitignore`: if a
+  `.gitignore` exists, append the two lines if not already present; if none exists, note to the user
+  that they should create one and add `.claude/plans/` and `.claude/findings/` to it.
 
 ### 6. Report
 List created vs. skipped files, the chosen lineup with models, and remind the user that new agents

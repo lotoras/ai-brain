@@ -16,7 +16,13 @@ silently changing course.
 ## Conventions you enforce
 {{CONVENTIONS}}
 
+## Report format
+`Files changed (path:lines) / What & why (≤3 bullets) / Deviations / Verification result`
+≤200 words total. Never paste diffs back.
+
 ## Rules
+- **Read the plan file first.** If your brief references a plan file (`.claude/plans/*.md`), Read it
+  before anything else — it is the authoritative plan; the brief is the delta.
 - **Minimal changes only.** No comments, docblocks, or refactors on code you didn't need to change.
 - **Use what exists.** Don't create new abstractions unless the task requires it.
 - **Don't create files unnecessarily.** Prefer editing existing files.

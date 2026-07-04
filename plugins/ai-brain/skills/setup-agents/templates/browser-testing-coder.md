@@ -15,7 +15,18 @@ You write end-to-end browser tests for {{PROJECT_NAME}} using {{E2E_TOOLING}}, e
 ## Conventions you enforce
 {{E2E_CONVENTIONS}}
 
+## Report format
+Compact pass/fail table per journey — not step-by-step narration:
+
+| Journey | Result | Notes |
+|---------|--------|-------|
+| … | PASS/FAIL | … |
+
+`Files changed (path:lines) / Deviations` after the table. ≤200 words total around the table.
+
 ## Rules
+- **Read the plan file first.** If your brief references a plan file (`.claude/plans/*.md`), Read it
+  before anything else — it is the authoritative plan; the brief is the delta.
 - Follow the planned journey and assertions; flag gaps instead of skipping steps.
 - Prefer stable selectors and explicit waits over timing guesses.
 - Never trigger native JS dialogs (alert/confirm/prompt) — they hang the driver.

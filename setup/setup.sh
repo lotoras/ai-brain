@@ -53,7 +53,7 @@ done
 
 # 4) Plugins
 step "4/7 Plugins (user scope)"
-for p in superpowers@claude-plugins-official frontend-design@claude-plugins-official codex@openai-codex cc-gemini-plugin@cc-gemini-plugin ai-brain@ai-brain; do
+for p in superpowers@ai-brain frontend-design@claude-plugins-official codex@openai-codex cc-gemini-plugin@cc-gemini-plugin ai-brain@ai-brain; do
   if [ $CHECK -eq 1 ]; then would "claude plugin install $p --scope user (+ enable)"
   else
     claude plugin install "$p" --scope user && claude plugin enable "${p%@*}" >/dev/null 2>&1 && ok "plugin $p" || warn "plugin $p (already installed?)"
@@ -63,7 +63,7 @@ done
 # 5) Config copy with backup
 step "5/7 Config -> ~/.claude (with backup)"
 STAMP="$(date +%Y%m%d-%H%M%S)"; BK="$CLAUDE_DIR/backup/$STAMP"; MERGE_JS="$ROOT/merge-settings.js"
-for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md hooks/threebrain-after-task.js; do
+for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md hooks/threebrain-after-task.js hooks/session-model-guard.js hooks/fable-edit-guard.js; do
   src="$SNAP/$rel"; dst="$CLAUDE_DIR/$rel"
   [ -f "$src" ] || { warn "snapshot missing $rel"; continue; }
   if [ $CHECK -eq 1 ]; then

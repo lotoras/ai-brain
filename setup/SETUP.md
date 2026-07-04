@@ -29,7 +29,7 @@ the `setup-brain` skill runs the script and walks you through the logins.
 2. **Global CLIs** — `npm i -g @google/gemini-cli @openai/codex` (skips if already installed).
 3. **Marketplaces** — adds `anthropics/claude-plugins-official`, `openai/codex-plugin-cc`,
    `thepushkarp/cc-gemini-plugin`, `lotoras/ai-brain`.
-4. **Plugins (user scope)** — installs + enables `superpowers`, `frontend-design`, `codex`,
+4. **Plugins (user scope)** — installs + enables `superpowers@ai-brain`, `frontend-design`, `codex`,
    `cc-gemini-plugin`, `ai-brain`.
 5. **Config → `~/.claude`** — backs up any existing files to `~/.claude/backup/<timestamp>/`, then
    writes `statusline-command.js`, `keybindings.json`, `CLAUDE.md`, `commands/dream.md`, and

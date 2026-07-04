@@ -17,9 +17,24 @@ Gemini for large-context or multimodal analysis, media-gen for visual generation
 task; pass the user's phrasing through; serialize browser work.
 
 Project agents follow a standard model policy: architects/planners default to **Opus** and are
-**Fable-upgradeable** — upgrade only when the task says to use Fable (typically via cc-enhance
-"use fable"), by dispatching with `model: "fable"` (the dispatch-time override beats the
-frontmatter default). Coders run **Sonnet**; exploration is always **Haiku**.
+**Fable-upgradeable** in non-Fable sessions only — upgrade only when the task explicitly says to
+use Fable (typically via cc-enhance "use fable") and the session is NOT on Fable 5, by dispatching
+with `model: "fable"` (the dispatch-time override beats the frontmatter default); in Fable 5
+sessions architects always stay Opus — the orchestrator's plan review is the Fable pass, never
+double-pay. Coders run **Sonnet**; exploration is always **Haiku**. **Fable 5 sessions**
+run as strict orchestrators (no direct edits, ever; effort medium). **Opus sessions** plan and
+reason in the main thread, delegate implementation to Sonnet coders, and apply the micro-edit
+exception (one file, few lines, location known — never on Fable). The `session-model-guard`
+SessionStart hook injects the per-model policy at the start of each session.
+
+## Token economy
+Sub-agent briefs are self-contained: objective (1–2 sentences), exact file paths + line ranges,
+all gathered findings pasted in, applicable constraints, required output format and word cap.
+Returns are compact and structured: `Result / Files changed (path:lines) / Deviations / Open
+questions`; coders ≤200 words, explorers ≤300 words. No duplicate exploration — paste Haiku
+findings verbatim into architect/coder briefs. Prefer continuing an existing agent (`SendMessage`)
+over respawning. Anti-patterns: whole-file reads when a range suffices, unguarded `Grep` in the
+main thread, forwarding raw tool output, two agents covering the same area.
 
 After finishing any task that **changed code**, the `threebrain-after-task` Stop hook will ask
 whether to run a threebrain pass — **Simplify** (`/simplify`) · **Review** (`/codex:review`) ·
@@ -28,3 +43,9 @@ yourself. Stay silent on read-only / Q&A tasks (the hook stays silent there too)
 pass: **Simplify** runs on **Fable 5** (dispatch a `model: "fable"` subagent if the session isn't on
 Fable 5); **Review** is done by **Codex**, triggered/relayed by a **Sonnet** subagent — Sonnet never
 reviews the code itself.
+
+Plans and large findings travel as files (`.claude/plans/<task-slug>.md`,
+`.claude/findings/<slug>.md`) — architects/explorers return the file path plus a ≤10-line summary;
+coders read the file directly. Per-task procedure: detect session model → map delegates → brief each
+per the self-contained-brief contract → dispatch → verify output. The `fable-edit-guard`
+PreToolUse hook hard-enforces (fail-open) that Fable 5 sessions never edit from the main thread.

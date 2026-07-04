@@ -9,7 +9,8 @@
     "command": "node ~/.claude/statusline-command.js"
   },
   "enabledPlugins": {
-    "superpowers@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": false,
+    "superpowers@ai-brain": true,
     "frontend-design@claude-plugins-official": true,
     "codex@openai-codex": true,
     "cc-gemini-plugin@cc-gemini-plugin": true,
@@ -33,9 +34,24 @@
           { "type": "command", "command": "node ~/.claude/hooks/threebrain-after-task.js" }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          { "type": "command", "command": "node ~/.claude/hooks/session-model-guard.js" }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "node ~/.claude/hooks/fable-edit-guard.js" }
+        ]
+      }
     ]
   },
-  "effortLevel": "xhigh",
   "skipDangerousModePermissionPrompt": true,
   "useAutoModeDuringPlan": false,
   "tui": "fullscreen"

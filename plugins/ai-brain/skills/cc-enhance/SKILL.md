@@ -36,13 +36,19 @@ the prompt text — do not add commentary outside the single output block.
 
 ## Step 1.6 — Fable upgrade (model routing)
 
-If the user's raw prompt contains a Fable trigger — "use fable", "with fable", "fable 5", "run the
-architects on fable", or similar — the enhanced **Task** must END with exactly this instruction
-(consume the trigger words; do not repeat them as task content):
+Trigger ONLY on explicit directives: "use fable", "with fable", "on fable", "run architects on
+fable", "run the architects on fable". Bare mentions of "fable" or "Fable 5" as subject matter
+(tasks ABOUT Fable, its cost, effort, or configuration) are NOT triggers — when in doubt, do NOT
+trigger.
 
-> Upgrade all Fable-upgradeable agents for this task: dispatch every architect/planner with
-> `model: "fable"` (dispatch-time override; their frontmatter default is Opus). Coders, test
-> writers, test planners, and exploration keep their default models.
+If the user's raw prompt contains one of those explicit directives, the enhanced **Task** must END
+with exactly this instruction (consume the trigger words; do not repeat them as task content):
+
+> If this session is NOT running on Fable 5: upgrade all Fable-upgradeable agents for this task —
+> dispatch every architect/planner with `model: "fable"` (dispatch-time override; their frontmatter
+> default is Opus). If this session IS running on Fable 5: keep all architects on Opus — Fable
+> oversight already comes from the session itself; never double-pay. Coders, test writers, test
+> planners, and exploration always keep their default models.
 
 Without a trigger, add nothing — architects run on their Opus default.
 

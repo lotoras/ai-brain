@@ -5,9 +5,20 @@
   "owner": { "name": "lotoras" },
   "plugins": [
     {
+      "name": "superpowers",
+      "description": "Model-aware fork of obra/superpowers — condensed session injection on Fable/Sonnet/Haiku",
+      "version": "5.1.0-fork.1",
+      "author": { "name": "lotoras" },
+      "source": "./plugins/superpowers",
+      "category": "productivity",
+      "keywords": ["skills", "tdd", "debugging", "collaboration", "best-practices", "workflows"],
+      "homepage": "https://github.com/lotoras/ai-brain",
+      "repository": "https://github.com/lotoras/ai-brain"
+    },
+    {
       "name": "ai-brain",
       "description": "Personal toolbox: generate images/videos via browser ChatGPT/Gemini, recolor icons to the UPD brand gradient, route review/analysis to Codex/Gemini, enhance prompts, provision the architect/coder/testing agent lineup into any project.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "author": { "name": "lotoras" },
       "source": "./plugins/ai-brain",
       "category": "productivity",

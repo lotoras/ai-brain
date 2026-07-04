@@ -26,7 +26,7 @@ machines where `ai-brain` is already installed.
   `bash setup/setup.sh`.
 - Offer a dry run first (`-Check` / `--check`) so the user sees the plan, then the real run.
 - The script is idempotent and backs up existing `~/.claude` config to `~/.claude/backup/<timestamp>/`.
-- It installs: marketplaces + the 5 user plugins (superpowers, frontend-design, codex,
+- It installs: marketplaces + the 5 user plugins (superpowers@ai-brain, frontend-design, codex,
   cc-gemini-plugin, ai-brain), the `gemini` + `codex` CLIs, the config snapshot, and the `clauded`
   launcher. Read its output back to the user; surface any `[!]` warnings.
 
