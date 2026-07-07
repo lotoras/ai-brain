@@ -56,7 +56,7 @@ function ask() {
     MARKER + ': This task changed code. Before you finish, do NOT stop yet —',
     'ask the user with the AskUserQuestion tool (header "threebrain",',
     'question "Run a threebrain pass over what just changed?") offering exactly these options:',
-    '"Simplify" — run /simplify on the code you just changed as a Fable 5 pass (if the session model is not Fable 5, dispatch the pass to a subagent with model "fable");',
+    '"Simplify" — run /simplify on the code you just changed as an Opus pass (if the session model is not Opus, dispatch the pass to a subagent with model "opus");',
     '"Review" — trigger the Codex review (/codex:review) by delegating the handoff to a subagent with model "sonnet" — Sonnet only triggers and relays the Codex review, it never reviews the code itself;',
     '"Both" — run both: Simplify, then Review;',
     '"No" — skip and stop.',

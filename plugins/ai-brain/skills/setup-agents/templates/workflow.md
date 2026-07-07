@@ -24,6 +24,8 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
    helpers, services, components, and patterns. No refactors of surrounding code, no abstractions
    for one-off changes.
 
+**Place it where it belongs (first time).** Put each new function in the layer that owns its concept from the start — don't inline logic that belongs to a deeper layer into a thin outer layer (controller, route, UI component, event handler) and refactor it into the owning layer later. Ask which layer owns the responsibility and put it there; outer layers stay thin and delegate. If the same logic would live at two or more call sites, give it a single home in the owning unit and have callers call it — never duplicate it. A scatter-then-extract "double take" means the placement decision was skipped.
+
 ## Phase 2: Plan
 
 4. **State the problem and solution in plain language** before writing code — what's wrong, what

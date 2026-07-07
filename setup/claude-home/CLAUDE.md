@@ -40,8 +40,8 @@ After finishing any task that **changed code**, the `threebrain-after-task` Stop
 whether to run a threebrain pass — **Simplify** (`/simplify`) · **Review** (`/codex:review`) ·
 **Both** · **No**. Let the hook be the single ask: do **not** also offer a threebrain pass in prose
 yourself. Stay silent on read-only / Q&A tasks (the hook stays silent there too). Models for the
-pass: **Simplify** runs on **Fable 5** (dispatch a `model: "fable"` subagent if the session isn't on
-Fable 5); **Review** is done by **Codex**, triggered/relayed by a **Sonnet** subagent — Sonnet never
+pass: **Simplify** runs on **Opus** (dispatch a `model: "opus"` subagent if the session isn't on
+Opus); **Review** is done by **Codex**, triggered/relayed by a **Sonnet** subagent — Sonnet never
 reviews the code itself.
 
 Plans and large findings travel as files (`.claude/plans/<task-slug>.md`,
