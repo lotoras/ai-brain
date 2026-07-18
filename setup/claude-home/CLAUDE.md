@@ -13,8 +13,11 @@ icon system/library, advise tracing to SVG.
 
 ## Handoffs across models
 See the **threebrain** skill for the orchestration model: Codex for review / adversarial / rescue,
-Gemini for large-context or multimodal analysis, media-gen for visual generation. One delegate per
-task; pass the user's phrasing through; serialize browser work.
+Gemini (in-browser, via claude-in-chrome) for creative generation — graphic concepts and inventive
+website components — plus video/audio/YouTube perception Claude can't do natively (upload the file
+or paste the link); media-gen for finished image/icon/video assets. Large-context text/code analysis
+stays with Claude (Opus, 1M context); the Gemini CLI role is retired. One delegate per task; pass the
+user's phrasing through; serialize browser work.
 
 Project agents follow a standard model policy: architects/planners default to **Opus** and are
 **Fable-upgradeable** in non-Fable sessions only — upgrade only when the task explicitly says to
