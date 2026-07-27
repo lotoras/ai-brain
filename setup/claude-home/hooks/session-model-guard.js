@@ -194,7 +194,9 @@ try {
   if (modelClass === 'fable') {
     parts.push(
       `SESSION_MODEL_GUARD policy — Fable 5 session: You are the orchestrator, not the worker.` +
-      ` Never Edit/Write from the main thread — even one-line changes go to a coder subagent.` +
+      ` Never Edit/Write from the main thread — even one-line changes go to a coder subagent;` +
+      ` the sole exception is your own plan file (*.md under .claude/plans/), which you may write` +
+      ` and edit directly.` +
       ` Delegate: planning/architecture → the project's Opus architect agents; implementation →` +
       ` Sonnet coders; exploration/mapping/multi-file reading → Haiku (Explore, model: "haiku").` +
       ` Read at most 1–3 targeted files per task yourself (use offset/limit ranges when known;` +
@@ -219,7 +221,8 @@ try {
     parts.push(
       `SESSION_MODEL_GUARD: The session model could not be read from settings (started via CLI` +
       ` flag or fresh install). Identify your model from your system prompt and apply the` +
-      ` matching policy: Fable 5 → strict orchestrator (never edit directly; delegate planning` +
+      ` matching policy: Fable 5 → strict orchestrator (never edit directly except plan files` +
+      ` under .claude/plans/; delegate planning` +
       ` to Opus architects, code to Sonnet, exploration to Haiku; 1–3 targeted reads max).` +
       ` Opus → plan in the main thread, delegate implementation to Sonnet and exploration to` +
       ` Haiku (micro-edit exception for tiny known-location changes). If you are Fable 5 and` +

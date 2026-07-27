@@ -6,6 +6,7 @@
  * Denies Edit / Write / NotebookEdit calls that originate from the *main thread*
  * of a Fable 5 session.  Subagent calls (identified by the presence of agent_id
  * or agent_type in stdin) are always allowed — coders must be able to edit.
+ * Plan files (*.md under a .claude/plans/ dir) are also always allowed.
  *
  * Wired in ~/.claude/settings.json:
  *   "hooks": { "PreToolUse": [ {
@@ -47,6 +48,8 @@ function deny() {
     'Fable 5 session policy: the main thread never edits. Dispatch a Sonnet coder ' +
     'subagent with a self-contained brief (objective, exact paths, gathered findings, ' +
     'required output format) and let it make this change. ' +
+    'The only main-thread write allowed on Fable is a plan file: *.md under a ' +
+    '.claude/plans/ directory. ' +
     '(If this denial seems wrong — e.g. the session is no longer on Fable 5 — tell ' +
     'the user to start a fresh session; this guard is keyed to the session-start model.)';
   process.stdout.write(JSON.stringify({
@@ -57,6 +60,17 @@ function deny() {
     },
   }));
   process.exit(0);
+}
+
+// Plan files are the one main-thread write a Fable orchestrator may do itself:
+// any *.md directly inside a .claude/plans/ directory (harness plan mode writes to
+// ~/.claude/plans/<slug>.md; project convention is <repo>/.claude/plans/<slug>.md).
+function isPlanFile(toolInput) {
+  const p = toolInput && (toolInput.file_path || toolInput.notebook_path || toolInput.path);
+  if (!p || typeof p !== 'string') return false;
+  const norm = p.replace(/\\/g, '/').toLowerCase();
+  if (norm.includes('/../') || norm.startsWith('../')) return false;  // no traversal escape
+  return /(^|\/)\.claude\/plans\/[^/]+\.md$/.test(norm);
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -87,7 +101,10 @@ try {
   const AGE_LIMIT = 48 * 60 * 60 * 1000;
   if (!state.written_at || (Date.now() - state.written_at) > AGE_LIMIT) allow();
 
-  // 6. Confirmed: fable + main thread + fresh state → DENY.
+  // 6. Plan-file exception — the orchestrator may write its own plan.
+  if (isPlanFile(input && input.tool_input)) allow();
+
+  // 7. Confirmed: fable + main thread + fresh state + not a plan file → DENY.
   deny();
 
 } catch (_) {

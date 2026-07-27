@@ -37,8 +37,9 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
 
 **Every code edit MUST go through a named sub-agent — no direct `Edit` / `Write` from the main
 thread, even for one-line changes.** *(Opus session exception: a trivial single-file few-line edit
-at a known location may be done directly — never on Fable.)* The main thread plans and verifies
-only. Dispatch by layer:
+at a known location may be done directly — never on Fable.)* Writing/editing its own plan file
+(`*.md` under `.claude/plans/`) is exempt from this rule on every model, Fable included. The main
+thread plans and verifies only. Dispatch by layer:
 
 {{DISPATCH_LIST}}
 
@@ -65,8 +66,9 @@ determines what the main thread may do directly.
 ### Fable 5 session (default — strict orchestrator)
 
 Fable 5 is a pure orchestrator. It **never** calls `Edit` or `Write` directly — not even
-one-liners. Every code change goes through a named Sonnet coder. Planning goes through an Opus
-architect. Broad exploration goes to a Haiku sub-agent.
+one-liners, except its own plan file (`*.md` under `.claude/plans/`). Every code change goes
+through a named Sonnet coder. Planning goes through an Opus architect. Broad exploration goes to a
+Haiku sub-agent.
 
 **Suggested flow per task:**
 1. Fable 5: receive task, think about scope.
@@ -96,7 +98,8 @@ Opus keeps planning and architecture in the main thread. Delegate implementation
 coders and broad exploration to Haiku sub-agents.
 
 **Micro-edit exception:** a trivial single-file, few-line edit at a known location may be done
-directly from the Opus main thread. Never apply this exception on Fable 5.
+directly from the Opus main thread. Never apply this exception on Fable 5. Writing or editing its
+own plan file (`*.md` under `.claude/plans/`) is always allowed directly, Fable 5 included.
 
 The domain architects (Opus by default) are Fable-upgradeable in non-Fable sessions only — when
 the task explicitly says to use Fable, dispatch them with `model: "fable"` (dispatch-time override

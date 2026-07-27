@@ -4,7 +4,8 @@
 the minimal change, delegate to sub-agents, then verify.
 
 **All code edits MUST go through sub-agents — no direct `Edit` / `Write` from the main thread, even
-for one-line changes.** The main Claude plans and verifies only. Dispatch by layer:
+for one-line changes** (except its own plan file — `*.md` under `.claude/plans/`). The main Claude
+plans and verifies only. Dispatch by layer:
 {{DISPATCH_LIST}}
 
 **Model policy:** domain architects run on **Opus** by default and are **Fable-upgradeable** in
@@ -14,7 +15,8 @@ override beats the frontmatter default); in Fable 5 sessions architects always s
 orchestrator's plan review is the Fable pass, never double-pay. Test planners ({{TEST_PLANNER_NAMES}}) are
 always **Opus**; all coders execute on **Sonnet**; exploration is always **Haiku** (`Explore` /
 `general-purpose` with `model: "haiku"`). **Fable 5 sessions** are strict orchestrators — no direct
-`Edit`/`Write`, ever. **Opus sessions** plan in the main thread; the micro-edit exception (one file,
+`Edit`/`Write`, ever, except its own plan file (`*.md` under `.claude/plans/`). **Opus sessions**
+plan in the main thread; the micro-edit exception (one file,
 a few lines, location known) applies only to Opus, never Fable. The after-task simplify/review pass
 is handled by the global threebrain Stop hook — its routing lives there, not here.
 

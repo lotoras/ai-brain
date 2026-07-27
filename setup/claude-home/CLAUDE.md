@@ -25,7 +25,8 @@ use Fable (typically via cc-enhance "use fable") and the session is NOT on Fable
 with `model: "fable"` (the dispatch-time override beats the frontmatter default); in Fable 5
 sessions architects always stay Opus — the orchestrator's plan review is the Fable pass, never
 double-pay. Coders run **Sonnet**; exploration is always **Haiku**. **Fable 5 sessions**
-run as strict orchestrators (no direct edits, ever; effort medium). **Opus sessions** plan and
+run as strict orchestrators (no direct edits except its own plan file — `*.md` under
+`.claude/plans/`; effort medium). **Opus sessions** plan and
 reason in the main thread, delegate implementation to Sonnet coders, and apply the micro-edit
 exception (one file, few lines, location known — never on Fable). The `session-model-guard`
 SessionStart hook injects the per-model policy at the start of each session.
@@ -51,4 +52,5 @@ Plans and large findings travel as files (`.claude/plans/<task-slug>.md`,
 `.claude/findings/<slug>.md`) — architects/explorers return the file path plus a ≤10-line summary;
 coders read the file directly. Per-task procedure: detect session model → map delegates → brief each
 per the self-contained-brief contract → dispatch → verify output. The `fable-edit-guard`
-PreToolUse hook hard-enforces (fail-open) that Fable 5 sessions never edit from the main thread.
+PreToolUse hook hard-enforces (fail-open) that Fable 5 sessions never edit from the main thread,
+apart from plan files under `.claude/plans/`.
