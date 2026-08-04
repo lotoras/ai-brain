@@ -36,8 +36,8 @@ if [ ${#missing[@]} -gt 0 ]; then
 fi
 
 # 2) Global CLIs
-step "2/7 Global CLIs (gemini, codex)"
-for pair in "gemini:@google/gemini-cli" "codex:@openai/codex"; do
+step "2/7 Global CLIs (codex)"
+for pair in "codex:@openai/codex"; do
   cmd="${pair%%:*}"; pkg="${pair#*:}"
   if have "$cmd"; then ok "$cmd already installed"
   elif [ $CHECK -eq 1 ]; then would "npm i -g $pkg"
@@ -46,14 +46,14 @@ done
 
 # 3) Marketplaces
 step "3/7 Plugin marketplaces"
-for m in anthropics/claude-plugins-official openai/codex-plugin-cc thepushkarp/cc-gemini-plugin lotoras/ai-brain; do
+for m in anthropics/claude-plugins-official openai/codex-plugin-cc lotoras/ai-brain; do
   if [ $CHECK -eq 1 ]; then would "claude plugin marketplace add $m"
   else claude plugin marketplace add "$m" && ok "marketplace $m" || warn "marketplace $m (already added?)"; fi
 done
 
 # 4) Plugins
 step "4/7 Plugins (user scope)"
-for p in superpowers@ai-brain frontend-design@claude-plugins-official codex@openai-codex cc-gemini-plugin@cc-gemini-plugin ai-brain@ai-brain; do
+for p in superpowers@ai-brain frontend-design@claude-plugins-official codex@openai-codex ai-brain@ai-brain; do
   if [ $CHECK -eq 1 ]; then would "claude plugin install $p --scope user (+ enable)"
   else
     claude plugin install "$p" --scope user && claude plugin enable "${p%@*}" >/dev/null 2>&1 && ok "plugin $p" || warn "plugin $p (already installed?)"
@@ -104,7 +104,6 @@ fi
 step "7/7 Verify"
 if [ $CHECK -eq 0 ]; then
   have claude && ok "claude $(claude --version 2>/dev/null)"
-  have gemini && ok "gemini $(gemini --version 2>/dev/null)"
   have codex  && ok "codex $(codex --version 2>/dev/null)"
   claude plugin list 2>/dev/null || true
 fi
@@ -113,11 +112,10 @@ cat <<'CHK'
 
 == Manual steps (guided auth - nothing stored) ==
   1. Claude login:      run 'claude' once and sign in (Anthropic).
-  2. Gemini CLI auth:   run 'gemini' once and sign in (Google). Use --skip-trust in untrusted dirs.
-  3. Codex CLI auth:    run 'codex login' (OpenAI / ChatGPT).
-  4. Claude-in-Chrome:  install the 'Claude in Chrome' extension, then let it pair in a Claude session (click Connect); name it (e.g. luka_computer).
-  5. media-gen logins:  sign in to chatgpt.com and gemini.google.com in that Chrome profile.
-  6. (optional) Enable claude.ai connectors (Gmail/Calendar/Drive/Stunden) at claude.ai.
-  7. Restart your shell so 'clauded' resolves, then start Claude with:  clauded
+  2. Codex CLI auth:    run 'codex login' (OpenAI / ChatGPT).
+  3. Claude-in-Chrome:  install the 'Claude in Chrome' extension, then let it pair in a Claude session (click Connect); name it (e.g. luka_computer).
+  4. media-gen logins:  sign in to chatgpt.com and gemini.google.com in that Chrome profile.
+  5. (optional) Enable claude.ai connectors (Gmail/Calendar/Drive/Stunden) at claude.ai.
+  6. Restart your shell so 'clauded' resolves, then start Claude with:  clauded
 CHK
 printf '\033[32mDone.\033[0m\n'

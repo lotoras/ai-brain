@@ -10,7 +10,7 @@ A single plugin, **`ai-brain`**, bundling these skills:
 |---|---|
 | **media-gen** | Generate **images / icons / video** by driving ChatGPT or Gemini in Chrome (via the `claude-in-chrome` MCP), then download and post-process. Default generator: **Gemini**. |
 | **recolor-icons** | Knock out icon backgrounds and recolor PNGs — **solid by default** (any color), **gradient** on request (Petrol `#006b6e` → mid-green `#a8d680`); left dark if no color is asked. Pillow + NumPy. |
-| **threebrain** | Auto-router: delegate review / adversarial / rescue to **Codex**, and video/audio/large-repo analysis to **Gemini**. |
+| **threebrain** | Auto-router: delegate review / adversarial / rescue to **Codex**, and video/audio/YouTube perception to **Gemini** (in-browser). |
 | **cc-enhance** | Rewrite a raw prompt into a tight Role + Task block for Claude Code (Opus). Routes media/icon requests to `media-gen`. |
 | **setup-brain** | Provision a new device: install this whole plugin set + replicate config (`clauded` launcher, statusline, keybindings, global `CLAUDE.md`, `dream`) and guide the logins. |
 

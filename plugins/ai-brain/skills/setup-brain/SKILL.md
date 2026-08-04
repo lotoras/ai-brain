@@ -1,6 +1,6 @@
 ---
 name: setup-brain
-description: Use when the user wants to provision a device with their full Claude Code environment — "set up my whole brain", "setup my claude according to this", "provision this machine / new device". Runs the ai-brain bootstrap (plugins, config, clauded launcher, statusline, dream) then guides the logins that can't be scripted (Claude, Gemini CLI, Codex CLI, Claude-in-Chrome, ChatGPT/Gemini web).
+description: Use when the user wants to provision a device with their full Claude Code environment — "set up my whole brain", "setup my claude according to this", "provision this machine / new device". Runs the ai-brain bootstrap (plugins, config, clauded launcher, statusline, dream) then guides the logins that can't be scripted (Claude, Codex CLI, Claude-in-Chrome, ChatGPT/Gemini web).
 ---
 
 # setup-brain — provision the whole brain
@@ -26,27 +26,25 @@ machines where `ai-brain` is already installed.
   `bash setup/setup.sh`.
 - Offer a dry run first (`-Check` / `--check`) so the user sees the plan, then the real run.
 - The script is idempotent and backs up existing `~/.claude` config to `~/.claude/backup/<timestamp>/`.
-- It installs: marketplaces + the 5 user plugins (superpowers@ai-brain, frontend-design, codex,
-  cc-gemini-plugin, ai-brain), the `gemini` + `codex` CLIs, the config snapshot, and the `clauded`
+- It installs: marketplaces + the 4 user plugins (superpowers@ai-brain, frontend-design, codex,
+  ai-brain), the `codex` CLI, the config snapshot, and the `clauded`
   launcher. Read its output back to the user; surface any `[!]` warnings.
 
 ## 2. Guide the manual logins — one at a time, verify each
 Walk these in order. Do each, then verify before moving on. **Never handle or store credentials** —
 the user signs in themselves.
 1. **Claude** — `claude` → sign in (Anthropic). Verify: `claude --version` and that it's logged in.
-2. **Gemini CLI** — `gemini` → sign in (Google). Powers `cc-gemini-plugin`. Note `--skip-trust` for
-   untrusted dirs. Verify: `gemini --version`.
-3. **Codex CLI** — `codex login` (OpenAI / ChatGPT). Powers the `codex` plugin. Verify: `codex --version`.
-4. **Claude-in-Chrome** — have the user install the *Claude in Chrome* extension, then trigger pairing:
+2. **Codex CLI** — `codex login` (OpenAI / ChatGPT). Powers the `codex` plugin. Verify: `codex --version`.
+3. **Claude-in-Chrome** — have the user install the *Claude in Chrome* extension, then trigger pairing:
    load the browser MCP tools (`ToolSearch select:mcp__claude-in-chrome__switch_browser`), call
    `switch_browser`, and have the user click **Connect** and name the browser (e.g. `luka_computer`).
    Powers `media-gen`.
-5. **media-gen web logins** — open `chatgpt.com` and `gemini.google.com` in that Chrome profile and
+4. **media-gen web logins** — open `chatgpt.com` and `gemini.google.com` in that Chrome profile and
    have the user sign in.
-6. **(optional) claude.ai connectors** — Gmail / Calendar / Drive / Stunden at claude.ai, if used.
+5. **(optional) claude.ai connectors** — Gmail / Calendar / Drive / Stunden at claude.ai, if used.
 
 ## 3. Final verify
-- `claude plugin list` → the 5 user plugins enabled.
+- `claude plugin list` → the 4 user plugins enabled.
 - `clauded --version` works in a **fresh** shell (remind the user to restart their shell / that
   `~/.local/bin` must be on PATH).
 - Statusline renders `📂 cwd · 🤖 model · 🧠 tokens · #session`.

@@ -26,11 +26,11 @@ the `setup-brain` skill runs the script and walks you through the logins.
 
 ## What the script does (idempotent, backs up existing config)
 1. **Preflight** — checks `node` / `npm` / `claude` are present (stops with guidance if not).
-2. **Global CLIs** — `npm i -g @google/gemini-cli @openai/codex` (skips if already installed).
+2. **Global CLIs** — `npm i -g @openai/codex` (skips if already installed).
 3. **Marketplaces** — adds `anthropics/claude-plugins-official`, `openai/codex-plugin-cc`,
-   `thepushkarp/cc-gemini-plugin`, `lotoras/ai-brain`.
+   `lotoras/ai-brain`.
 4. **Plugins (user scope)** — installs + enables `superpowers@ai-brain`, `frontend-design`, `codex`,
-   `cc-gemini-plugin`, `ai-brain`.
+   `ai-brain`.
 5. **Config → `~/.claude`** — backs up any existing files to `~/.claude/backup/<timestamp>/`, then
    writes `statusline-command.js`, `keybindings.json`, `CLAUDE.md`, `commands/dream.md`, and
    `hooks/threebrain-after-task.js`. `settings.json` is **merged** (not overwritten) via
@@ -52,17 +52,16 @@ marker). Activates from the next session (Claude Code may show a one-time hook-a
 | # | Step | How |
 |---|---|---|
 | 1 | **Claude login** | `claude` → sign in (Anthropic). |
-| 2 | **Gemini CLI** | `gemini` → sign in (Google). Powers the `cc-gemini-plugin`. Use `--skip-trust` in untrusted dirs. |
-| 3 | **Codex CLI** | `codex login` → OpenAI / ChatGPT. Powers the `codex` plugin. |
-| 4 | **Claude-in-Chrome** | Install the *Claude in Chrome* extension. In a Claude session let it pair (click **Connect** in the extension); name it (e.g. `luka_computer`). Powers `media-gen`. |
-| 5 | **media-gen logins** | Sign in to **chatgpt.com** and **gemini.google.com** in that Chrome profile. |
-| 6 | **(optional) claude.ai connectors** | Enable Gmail / Calendar / Drive / Stunden at claude.ai if you use them. |
-| 7 | **Restart your shell** | so `clauded` resolves, then start Claude with `clauded`. |
+| 2 | **Codex CLI** | `codex login` → OpenAI / ChatGPT. Powers the `codex` plugin. |
+| 3 | **Claude-in-Chrome** | Install the *Claude in Chrome* extension. In a Claude session let it pair (click **Connect** in the extension); name it (e.g. `luka_computer`). Powers `media-gen`. |
+| 4 | **media-gen logins** | Sign in to **chatgpt.com** and **gemini.google.com** in that Chrome profile. |
+| 5 | **(optional) claude.ai connectors** | Enable Gmail / Calendar / Drive / Stunden at claude.ai if you use them. |
+| 6 | **Restart your shell** | so `clauded` resolves, then start Claude with `clauded`. |
 
 ## Verify
-- `claude plugin list` → the 5 user plugins enabled.
+- `claude plugin list` → the 4 user plugins enabled.
 - `clauded --version` works in a fresh shell.
 - Statusline shows `📂 cwd · 🤖 model · 🧠 tokens · #session`.
-- `gemini --version`, `codex --version` respond.
+- `codex --version` responds.
 
 Re-running the script is safe — it skips installed items and re-backs-up config.

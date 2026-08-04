@@ -42,8 +42,8 @@ if($missing.Count){
 }
 
 # 2) Global CLIs -------------------------------------------------------------
-Step "2/7 Global CLIs (gemini, codex)"
-foreach($t in @(@{cmd='gemini';pkg='@google/gemini-cli'},@{cmd='codex';pkg='@openai/codex'})){
+Step "2/7 Global CLIs (codex)"
+foreach($t in @(@{cmd='codex';pkg='@openai/codex'})){
   if(Have $t.cmd){ Ok "$($t.cmd) already installed" }
   elseif($Check){ Would "npm i -g $($t.pkg)" }
   else{ Info "npm i -g $($t.pkg)"; npm i -g $t.pkg; if($LASTEXITCODE -eq 0){ Ok "installed $($t.pkg)" } else { Warn "npm install $($t.pkg) returned $LASTEXITCODE" } }
@@ -51,7 +51,7 @@ foreach($t in @(@{cmd='gemini';pkg='@google/gemini-cli'},@{cmd='codex';pkg='@ope
 
 # 3) Marketplaces ------------------------------------------------------------
 Step "3/7 Plugin marketplaces"
-foreach($m in 'anthropics/claude-plugins-official','openai/codex-plugin-cc','thepushkarp/cc-gemini-plugin','lotoras/ai-brain'){
+foreach($m in 'anthropics/claude-plugins-official','openai/codex-plugin-cc','lotoras/ai-brain'){
   if($Check){ Would "claude plugin marketplace add $m"; continue }
   claude plugin marketplace add $m
   if($LASTEXITCODE -eq 0){ Ok "marketplace $m" } else { Warn "marketplace $m (already added?)" }
@@ -59,7 +59,7 @@ foreach($m in 'anthropics/claude-plugins-official','openai/codex-plugin-cc','the
 
 # 4) Plugins -----------------------------------------------------------------
 Step "4/7 Plugins (user scope)"
-foreach($p in 'superpowers@ai-brain','frontend-design@claude-plugins-official','codex@openai-codex','cc-gemini-plugin@cc-gemini-plugin','ai-brain@ai-brain'){
+foreach($p in 'superpowers@ai-brain','frontend-design@claude-plugins-official','codex@openai-codex','ai-brain@ai-brain'){
   if($Check){ Would "claude plugin install $p --scope user (+ enable)"; continue }
   claude plugin install $p --scope user
   claude plugin enable ($p.Split('@')[0]) 2>$null
@@ -130,7 +130,6 @@ if($Check){
 Step "7/7 Verify"
 if(-not $Check){
   try { Ok ("claude " + (claude --version)) } catch {}
-  if(Have 'gemini'){ try { Ok ("gemini " + (gemini --version)) } catch {} }
   if(Have 'codex'){ try { Ok ("codex " + (codex --version)) } catch {} }
   Info "Installed plugins:"; claude plugin list
 }
@@ -138,12 +137,11 @@ if(-not $Check){
 Write-Host "`n== Manual steps (guided auth - nothing stored) ==" -ForegroundColor Magenta
 @(
   "1. Claude login:      run 'claude' once and sign in (Anthropic).",
-  "2. Gemini CLI auth:   run 'gemini' once and sign in (Google). Use --skip-trust in untrusted dirs.",
-  "3. Codex CLI auth:    run 'codex login' (OpenAI / ChatGPT).",
-  "4. Claude-in-Chrome:  install the 'Claude in Chrome' extension, then let it pair in a Claude session (click Connect); name it (e.g. luka_computer).",
-  "5. media-gen logins:  sign in to chatgpt.com and gemini.google.com in that Chrome profile.",
-  "6. (optional) Enable claude.ai connectors (Gmail/Calendar/Drive/Stunden) at claude.ai.",
-  "7. Restart your shell so 'clauded' resolves, then start Claude with:  clauded"
+  "2. Codex CLI auth:    run 'codex login' (OpenAI / ChatGPT).",
+  "3. Claude-in-Chrome:  install the 'Claude in Chrome' extension, then let it pair in a Claude session (click Connect); name it (e.g. luka_computer).",
+  "4. media-gen logins:  sign in to chatgpt.com and gemini.google.com in that Chrome profile.",
+  "5. (optional) Enable claude.ai connectors (Gmail/Calendar/Drive/Stunden) at claude.ai.",
+  "6. Restart your shell so 'clauded' resolves, then start Claude with:  clauded"
 ) | ForEach-Object { Write-Host "  $_" }
 
 Write-Host "`nDone." -ForegroundColor Green
