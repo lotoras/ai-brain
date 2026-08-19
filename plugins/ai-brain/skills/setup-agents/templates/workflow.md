@@ -13,7 +13,9 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
    constraints, output format + word cap); reference plan files in `.claude/plans/` instead of
    pasting plan text.
 4. **Dispatch** (in parallel when layers are independent), then **verify**: review the compact
-   return, run {{TEST_COMMAND}}, confirm the diff is minimal before reporting done.
+   return, run {{TEST_COMMAND}}, confirm the diff is minimal before reporting done. If the task
+   fans out across many files/layers/concerns, script it as a **workflow** instead of hand-chaining
+   dispatches — see "Dynamic workflows (Workflow tool)".
 
 ## Phase 1: Understand
 
@@ -144,6 +146,69 @@ when stale (>1 week).
 - Forwarding raw tool output instead of the distilled finding.
 - Two agents exploring the same area.
 - Spawning a fresh agent when the previous one can continue.
+
+## Dynamic workflows (Workflow tool)
+
+**Standing authorization:** multi-agent orchestration via the **Workflow** tool is authorized as a
+standing default in this project — treat this rule as my explicit opt-in. Don't ask "should I run a
+workflow?" and don't wait for the `ultracode` keyword; script one whenever the task has the shape
+below. *(Source of truth for this section: ai-brain `skills/setup-agents/templates/workflow.md` —
+edit it there and copy verbatim; keep it project-agnostic.)*
+
+**Default to a workflow.** Once a task fans out, a script-driven run (`agent()` / `pipeline()` /
+`parallel()`) is the orchestration, not a hand-chained sequence of `Agent` dispatches:
+- multi-file or multi-layer feature work (plan → implement per layer → verify)
+- reviews, audits, security/perf sweeps (fan out, then judge)
+- migrations and mechanical rewrites across many files
+- research sweeps over an unfamiliar area, verify-findings passes over a list of claims
+
+**Stay with a single `Agent` dispatch** for one-file/one-step changes, a single targeted question, a
+lookup, or conversational work. Nothing trivial gets a workflow — but when in doubt, workflow.
+
+### Model mapping inside `agent()` — mandatory
+
+`agent()` inherits the **main-loop model** when nothing is set; in a Fable 5 session that silently
+runs every stage on Fable. Never allow it: **every `agent()` call carries an explicit `agentType`
+or `model`.**
+
+| Stage | Set on `agent()` | Effective model |
+|---|---|---|
+| Exploration, mapping, greps, mechanical edits | `model: 'haiku'` (or `effort: 'low'`) | Haiku |
+| Implementation / code edits | `agentType:` the project's named coder for that layer | Sonnet (frontmatter) |
+| Planning, design, judging, adversarial review | `agentType:` the project's named architect / test planner | Opus (frontmatter) |
+| Anything else | pick one of the rows above — never omit both | — |
+
+`agentType` beats the inherited model and also pulls in that agent's tool restrictions and output
+contract, so naming the project's own agents is the safest form. Fable stays in the main loop: it
+writes the script, reviews returns, talks to the user. No workflow stage runs on Fable.
+
+### Contracts still apply
+
+- Each `agent()` prompt is a **self-contained brief** per the Brief contract above — a stage cannot
+  see the script, the session, or its siblings.
+- Use `schema` on any stage whose output a later stage consumes; free text only for the final
+  stage or a human-facing summary.
+- Plans go to `.claude/plans/<slug>.md`, large findings to `.claude/findings/<slug>.md`; pass
+  **paths** between stages, never pasted bodies.
+- The Return contract (`Result / Files changed / Deviations / Open questions`) and its word caps
+  hold inside workflows exactly as for `Agent`.
+
+### Size
+
+Respect the session's workflow size guideline — default **medium (aim for < 15 agents)**. Prefer
+depth (a few well-briefed stages) over width; go bigger only when the user asks for scale.
+
+### Patterns
+
+- **Pipeline (default for features):** explore (haiku) → plan (architect, writes
+  `.claude/plans/<slug>.md`) → implement (named coders, `parallel` per layer, given the plan path)
+  → verify (haiku + the project's test command).
+- **Adversarial verify (reviews/audits):** `parallel` finders (haiku, one concern each, `schema`'d
+  findings) → dedupe → **judge** (architect) that discards unreproducible findings → report file.
+- **Parallel explore sweep (unfamiliar area):** `parallel` haiku explorers, one per subsystem, each
+  returning a `schema`'d summary plus a findings-file path → one synthesis stage.
+
+Long runs go **background**; report the run and collect results instead of blocking.
 
 ## Rules
 

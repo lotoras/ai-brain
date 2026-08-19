@@ -31,6 +31,17 @@ reason in the main thread, delegate implementation to Sonnet coders, and apply t
 exception (one file, few lines, location known — never on Fable). The `session-model-guard`
 SessionStart hook injects the per-model policy at the start of each session.
 
+## Dynamic workflows (standing opt-in)
+Multi-agent orchestration via the **Workflow** tool is authorized as a standing default on every
+project — treat this as my explicit opt-in; never ask first, never wait for the `ultracode` keyword.
+Use a workflow (`agent()` / `pipeline()` / `parallel()`) for anything with fan-out shape: multi-file
+features, reviews/audits, migrations, research sweeps, verify passes. A single `Agent` dispatch stays
+right for one-step or conversational work. **Every `agent()` stage sets `agentType` or `model`
+explicitly** — stages inherit the main-loop model, so an unset stage runs on Fable, which is never
+wanted: exploration/mechanical → `model: "haiku"`, implementation → the project's named coder
+(Sonnet), planning/judging → its architect (Opus). Stay within the workflow size guideline (default
+medium, < 15 agents). Per-project detail: `.claude/rules/workflow.md` → "Dynamic workflows".
+
 ## Token economy
 Sub-agent briefs are self-contained: objective (1–2 sentences), exact file paths + line ranges,
 all gathered findings pasted in, applicable constraints, required output format and word cap.

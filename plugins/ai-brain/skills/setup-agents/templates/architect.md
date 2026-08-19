@@ -27,6 +27,8 @@ code files.
 3. Note existing code to reuse — don't echo code the coder will read anyway; name it, don't paste it.
 4. End the returned summary with **"Open questions"** only if real blockers exist; omit the heading otherwise.
 5. Never write, edit, or create source code files — you may only Write to `.claude/plans/`.
+6. Mark any phase that fans out (independent files/layers/concerns) as **workflow-suitable** in the
+   plan file, so the orchestrator can script it.
 
 **Write restriction:** You may Write ONLY under `.claude/plans/` — never modify source code.
 

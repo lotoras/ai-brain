@@ -25,7 +25,9 @@ to use Fable (typically via cc-enhance "use fable") AND the session is NOT runni
 main thread dispatches the agent with `model: "fable"` — the dispatch-time override beats the
 frontmatter default. In Fable 5 sessions, architects always stay Opus — the orchestrator's plan
 review is the Fable pass; never double-pay for Fable judgment. Only domain architects are
-Fable-upgradeable; test planners, coders, and exploration never upgrade.
+Fable-upgradeable; test planners, coders, and exploration never upgrade. Dynamic workflows are the
+default orchestration once a task fans out — workflow `agent()` stages follow the model-mapping
+table in the template's "Dynamic workflows (Workflow tool)" section.
 
 Split per **layer** only when the project genuinely has more than one (e.g. backend + frontend →
 two architect/coder pairs). A mono-layer project (CLI tool, API-only service, library, script
@@ -44,11 +46,12 @@ pass in step 2 are independent — dispatch the Explore agent in the same messag
 while it runs.
 
 **Refresh check (already-provisioned projects):** if an existing `.claude/rules/workflow.md` lacks
-the "Token-efficient handoffs" section, the "How to proceed" section, or the file-based handoff
-rules (`.claude/plans` / `.claude/findings`); or if any existing agent file lacks its output/report
-contract block or the plan-file contract (architects writing plans to `.claude/plans/`, coders
-reading plan files first) — add the missing sections non-destructively from the current templates.
-Never clobber project-specific customizations — append or insert only where the section is absent.
+the "Token-efficient handoffs" section, the "How to proceed" section, the "Dynamic workflows
+(Workflow tool)" section, or the file-based handoff rules (`.claude/plans` / `.claude/findings`); or
+if any existing agent file lacks its output/report contract block or the plan-file contract
+(architects writing plans to `.claude/plans/`, coders reading plan files first) — add the missing
+sections non-destructively from the current templates. Never clobber project-specific
+customizations — append or insert only where the section is absent.
 
 ### 2. Detect the project (one Haiku Explore subagent)
 Dispatch a single `Explore` subagent with `model: "haiku"` to report:
@@ -85,7 +88,9 @@ values in the templates are the policy — do not change them.
 ### 5. Install the workflow rule and CLAUDE.md section
 - Write `.claude/rules/workflow.md` from `templates/workflow.md` (create `.claude/rules/` if
   needed), filling in the project's agent names and verify commands. If the project already has a
-  workflow rule, propose a merge instead of replacing it.
+  workflow rule, propose a merge instead of replacing it. The "Dynamic workflows (Workflow tool)"
+  section is copied verbatim — it contains no placeholders; never substitute or customize it per
+  project.
 - Append the filled `templates/claude-md-section.md` to the project's `CLAUDE.md` (create the file
   with just that section if absent).
 - Ensure `.claude/plans/` and `.claude/findings/` are listed in the project's `.gitignore`: if a
@@ -94,4 +99,5 @@ values in the templates are the policy — do not change them.
 
 ### 6. Report
 List created vs. skipped files, the chosen lineup with models, and remind the user that new agents
-are picked up on the next session start (or via `/agents`).
+are picked up on the next session start (or via `/agents`). Note that the project now carries a
+standing Workflow-tool opt-in ("Dynamic workflows enabled as standing default").

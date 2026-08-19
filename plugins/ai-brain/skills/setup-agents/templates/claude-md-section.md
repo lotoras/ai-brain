@@ -25,6 +25,14 @@ calls). See `.claude/rules/workflow.md` → "Session-model discipline" for the f
 Briefs are self-contained and returns compact — see `.claude/rules/workflow.md` → Token-efficient
 handoffs.
 
+**Dynamic workflows:** multi-agent orchestration via the **Workflow** tool is authorized as a
+standing default here — treat this as my explicit opt-in; never ask first. Use a workflow for
+anything with fan-out shape (multi-file feature, review/audit, migration, research sweep, verify
+pass); a single `Agent` dispatch stays right for one-step work. Every `agent()` stage sets
+`agentType` or `model` explicitly — exploration → `model: "haiku"`, implementation → the named
+coder (Sonnet), planning/judging → the architect (Opus); nothing inherits Fable. Full rules:
+`.claude/rules/workflow.md` → "Dynamic workflows".
+
 Plans and large findings travel as files (`.claude/plans/`, `.claude/findings/`), not inline text.
 Per task: detect session model → map delegates → brief per contract → dispatch → verify. Full
 procedure: `.claude/rules/workflow.md` → How to proceed.
