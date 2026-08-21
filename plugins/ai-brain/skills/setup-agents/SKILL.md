@@ -74,7 +74,8 @@ Dispatch a single `Explore` subagent with `model: "haiku"` to report:
   that being a distinct, recurring workstream.
 
 ### 4. Generate the agent files
-Fill the templates from `${CLAUDE_PLUGIN_ROOT}/templates/` into `.claude/agents/<name>.md`:
+Fill the templates from `${CLAUDE_PLUGIN_ROOT}/skills/setup-agents/templates/` into
+`.claude/agents/<name>.md`:
 - `architect.md` / `coder.md` — one filled copy per layer
 - `testing-architect.md` / `testing-coder.md`
 - `browser-testing-architect.md` / `browser-testing-coder.md` (only if e2e)

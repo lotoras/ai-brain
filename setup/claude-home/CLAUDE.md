@@ -42,6 +42,12 @@ wanted: exploration/mechanical → `model: "haiku"`, implementation → the proj
 (Sonnet), planning/judging → its architect (Opus). Stay within the workflow size guideline (default
 medium, < 15 agents). Per-project detail: `.claude/rules/workflow.md` → "Dynamic workflows".
 
+This section alone does **not** arm the tool: the Workflow tool only accepts an opt-in that arrives
+as session context or in my own message, so `session-model-guard` injects it as a
+`SESSION_WORKFLOW_POLICY` block at every session start — on all four model classes, including the
+Sonnet/Haiku sessions that get no other policy. The text above is the human-readable source of
+truth; the hook block is what actually authorizes the tool. Keep the two in sync.
+
 ## Token economy
 Sub-agent briefs are self-contained: objective (1–2 sentences), exact file paths + line ranges,
 all gathered findings pasted in, applicable constraints, required output format and word cap.
