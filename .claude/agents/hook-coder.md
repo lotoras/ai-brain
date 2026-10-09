@@ -1,8 +1,8 @@
 ---
 name: hook-coder
-description: "Use this agent for implementing Node.js (CommonJS, no dependencies — only Node built-ins), bash, and PowerShell hooks & provisioning code in ai-brain — hook scripts under setup/claude-home/hooks/, setup/setup.sh, setup/setup.ps1, merge-settings.js, setup/claude-home/statusline-command.js, and the JSON config snapshot files. Executes a plan (from `hook-architect` or the user). Enforces no deps, fail open + exit 0, stdout is JSON-only, keep the docblock truthful, redeploy setup/claude-home changes to ~/.claude."
+description: "Use this agent for implementing Node.js (CommonJS, no dependencies — only Node built-ins), bash, and PowerShell hooks & provisioning code in ai-brain — hook scripts under setup/claude-home/hooks/, setup/setup.sh, setup/setup.ps1, merge-settings.js, setup/claude-home/statusline-command.js, and the JSON config snapshot files. Executes a plan (from `hook-architect` or the user). Enforces no deps, fail open + exit 0, stdout is JSON-only, keep the docblock truthful, redeploy setup/claude-home changes to ~/.claude. Sonnet/Haiku-dispatchable: plan-driven work with model \"sonnet\", purely mechanical edits with model \"haiku\"; frontmatter default stays Opus for escalation."
 tools: Bash, Glob, Grep, Read, Edit, Write
-model: sonnet
+model: opus
 color: green
 ---
 

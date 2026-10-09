@@ -1,8 +1,8 @@
 ---
 name: skill-coder
-description: "Use this agent for implementing skill and plugin-layer Markdown in ai-brain — SKILL.md files, their YAML frontmatter, templates under plugins/ai-brain/skills/setup-agents/templates/, colocated helper scripts, and plugin.json manifests. Executes a plan (from `skill-architect` or the user). Enforces trigger-rich frontmatter descriptions, imperative procedural bodies, and real verified paths."
+description: "Use this agent for implementing skill and plugin-layer Markdown in ai-brain — SKILL.md files, their YAML frontmatter, templates under plugins/ai-brain/skills/setup-agents/templates/, colocated helper scripts, and plugin.json manifests. Executes a plan (from `skill-architect` or the user). Enforces trigger-rich frontmatter descriptions, imperative procedural bodies, and real verified paths. Sonnet/Haiku-dispatchable: plan-driven work with model \"sonnet\", purely mechanical edits with model \"haiku\"; frontmatter default stays Opus for escalation."
 tools: Bash, Glob, Grep, Read, Edit, Write
-model: sonnet
+model: opus
 color: cyan
 ---
 

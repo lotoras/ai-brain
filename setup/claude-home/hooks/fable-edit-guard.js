@@ -45,7 +45,7 @@ function allow() { process.exit(0); }
 
 function deny() {
   const reason =
-    'Fable 5 session policy: the main thread never edits. Dispatch a Sonnet coder ' +
+    'Fable 5 session policy: the main thread never edits. Dispatch a named coder ' +
     'subagent with a self-contained brief (objective, exact paths, gathered findings, ' +
     'required output format) and let it make this change. ' +
     'The only main-thread write allowed on Fable is a plan file: *.md under a ' +

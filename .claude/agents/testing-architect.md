@@ -1,6 +1,6 @@
 ---
 name: testing-architect
-description: "Use this agent for ad-hoc contract-check test PLANNING in ai-brain — this repo has no test framework, no CI, and no test directory; verification means hand-exercising the real hooks and scripts. Deciding what to verify, picking the right check type (hook contract checks, node --check syntax checks, provisioning --check/-Check dry-runs, deployment-sync diffs, skill-integrity/placeholder checks), what stdin JSON / settings-cascade state is needed, and which existing contract-exercise pattern to follow. Produces a plan that `testing-coder` executes. Reads and reasons — returns a plan, never writes tests."
+description: "Use this agent for ad-hoc contract-check test PLANNING in ai-brain — this repo has no test framework, no CI, and no test directory; verification means hand-exercising the real hooks and scripts. Deciding what to verify, picking the right check type (hook contract checks, node --check syntax checks, provisioning --check/-Check dry-runs, deployment-sync diffs, skill-integrity/placeholder checks), what stdin JSON / settings-cascade state is needed, and which existing contract-exercise pattern to follow. Produces a plan that `testing-coder` executes. Reads and reasons — returns a plan, never writes tests. Opus, effort high (xhigh hard); never Fable."
 tools: Bash, Read, Glob, Grep, Write, Agent(Explore, general-purpose)
 model: opus
 color: orange

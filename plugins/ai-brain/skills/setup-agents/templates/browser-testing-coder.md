@@ -1,8 +1,8 @@
 ---
 name: browser-testing-coder
-description: "Use this agent for writing BROWSER (end-to-end) tests in {{PROJECT_NAME}} — {{E2E_TOOLING}}. Executes a plan (from `browser-testing-architect` or the user). Enforces {{E2E_CONVENTIONS_SHORT}}. For unit/feature tests, use `testing-coder`."
+description: "Use this agent for writing BROWSER (end-to-end) tests in {{PROJECT_NAME}} — {{E2E_TOOLING}}. Executes a plan (from `browser-testing-architect` or the user). Enforces {{E2E_CONVENTIONS_SHORT}}. For unit/feature tests, use `testing-coder`. Sonnet/Haiku-dispatchable: plan-driven work with model \"sonnet\", purely mechanical edits with model \"haiku\"; frontmatter default stays Opus for escalation."
 tools: Bash, Glob, Grep, Read, Edit, Write
-model: sonnet
+model: opus
 color: pink
 ---
 

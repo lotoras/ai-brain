@@ -1,8 +1,8 @@
 ---
 name: testing-coder
-description: "Use this agent for writing {{TEST_FRAMEWORK}} tests in {{PROJECT_NAME}}. Executes a plan (from `testing-architect` or the user). Enforces {{TEST_CONVENTIONS_SHORT}}."
+description: "Use this agent for writing {{TEST_FRAMEWORK}} tests in {{PROJECT_NAME}}. Executes a plan (from `testing-architect` or the user). Enforces {{TEST_CONVENTIONS_SHORT}}. Sonnet/Haiku-dispatchable: plan-driven work with model \"sonnet\", purely mechanical edits with model \"haiku\"; frontmatter default stays Opus for escalation."
 tools: Bash, Glob, Grep, Read, Edit, Write
-model: sonnet
+model: opus
 color: green
 ---
 

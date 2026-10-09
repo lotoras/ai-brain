@@ -67,7 +67,7 @@ background to key against.
   luminance damages its edges (and on a mid-tone icon makes the whole thing semi-transparent).
   Quick check: `python -c "from PIL import Image; import numpy as np; a=np.array(Image.open(r'PATH').convert('RGBA'))[:,:,3]; print('already_transparent', (a<255).mean()>0.02)"`.
 - **Knock out the background only for FLATTENED raster.** ChatGPT's "full size" PNG is flattened
-  onto **near-white** and Gemini renders on **white** (no alpha). For those, run
+  onto **near-white** (no alpha). For those, run
   `transparent-bg.py` first, then recolor the resulting `-transparent.png`; otherwise the
   recolor floods the whole square and the icon disappears.
 - **Monochrome vs multi-color.** `recolor-solid.py` paints **every** opaque pixel one color —

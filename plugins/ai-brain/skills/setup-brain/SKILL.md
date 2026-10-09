@@ -1,6 +1,6 @@
 ---
 name: setup-brain
-description: Use when the user wants to provision a device with their full Claude Code environment — "set up my whole brain", "setup my claude according to this", "provision this machine / new device". Runs the ai-brain bootstrap (plugins, config, clauded launcher, statusline, dream) then guides the logins that can't be scripted (Claude, Codex CLI, Claude-in-Chrome, ChatGPT/Gemini web).
+description: Use when the user wants to provision a device with their full Claude Code environment — "set up my whole brain", "setup my claude according to this", "provision this machine / new device". Runs the ai-brain bootstrap (plugins, config, clauded launcher, statusline, dream) then guides the logins that can't be scripted (Claude, Codex CLI, Claude-in-Chrome, ChatGPT web).
 ---
 
 # setup-brain — provision the whole brain
@@ -39,8 +39,8 @@ the user signs in themselves.
    load the browser MCP tools (`ToolSearch select:mcp__claude-in-chrome__switch_browser`), call
    `switch_browser`, and have the user click **Connect** and name the browser (e.g. `luka_computer`).
    Powers `media-gen`.
-4. **media-gen web logins** — open `chatgpt.com` and `gemini.google.com` in that Chrome profile and
-   have the user sign in.
+4. **media-gen web login** — open `chatgpt.com` in that Chrome profile and
+   have the user sign in (plus `gemini.google.com` if they want Veo video).
 5. **(optional) claude.ai connectors** — Gmail / Calendar / Drive / Stunden at claude.ai, if used.
 
 ## 3. Final verify

@@ -1,8 +1,8 @@
 ---
 name: testing-coder
-description: "Use this agent for writing shell-verification checks in ai-brain (no test framework is installed — verification is inline one-liners run from the repo root, not files in a suite). Executes a plan (from `testing-architect` or the user). Enforces real scripts not mocks; JSON on stdin, parse the JSON on stdout; cover every branch and the fail-open paths; assert exit 0; add no runner and no deps."
+description: "Use this agent for writing shell-verification checks in ai-brain (no test framework is installed — verification is inline one-liners run from the repo root, not files in a suite). Executes a plan (from `testing-architect` or the user). Enforces real scripts not mocks; JSON on stdin, parse the JSON on stdout; cover every branch and the fail-open paths; assert exit 0; add no runner and no deps. Sonnet/Haiku-dispatchable: plan-driven work with model \"sonnet\", purely mechanical edits with model \"haiku\"; frontmatter default stays Opus for escalation."
 tools: Bash, Glob, Grep, Read, Edit, Write
-model: sonnet
+model: opus
 color: green
 ---
 

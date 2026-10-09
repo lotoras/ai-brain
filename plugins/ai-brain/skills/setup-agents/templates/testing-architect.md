@@ -1,6 +1,6 @@
 ---
 name: testing-architect
-description: "Use this agent for {{TEST_FRAMEWORK}} test PLANNING in {{PROJECT_NAME}} — deciding what to test, picking the right test type ({{TEST_TYPES}}), which fixtures/factories/mocks are needed, and which existing test patterns to follow. Produces a plan that `testing-coder` executes. Reads and reasons — returns a plan, never writes tests."
+description: "Use this agent for {{TEST_FRAMEWORK}} test PLANNING in {{PROJECT_NAME}} — deciding what to test, picking the right test type ({{TEST_TYPES}}), which fixtures/factories/mocks are needed, and which existing test patterns to follow. Produces a plan that `testing-coder` executes. Reads and reasons — returns a plan, never writes tests. Effort ladder: high by default, xhigh for hard/cross-cutting designs."
 tools: Bash, Read, Glob, Grep, Write, Agent(Explore, general-purpose)
 model: opus
 color: orange

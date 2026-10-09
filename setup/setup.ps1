@@ -139,7 +139,7 @@ Write-Host "`n== Manual steps (guided auth - nothing stored) ==" -ForegroundColo
   "1. Claude login:      run 'claude' once and sign in (Anthropic).",
   "2. Codex CLI auth:    run 'codex login' (OpenAI / ChatGPT).",
   "3. Claude-in-Chrome:  install the 'Claude in Chrome' extension, then let it pair in a Claude session (click Connect); name it (e.g. luka_computer).",
-  "4. media-gen logins:  sign in to chatgpt.com and gemini.google.com in that Chrome profile.",
+  "4. media-gen logins:  sign in to chatgpt.com in that Chrome profile (and gemini.google.com if you want Veo video).",
   "5. (optional) Enable claude.ai connectors (Gmail/Calendar/Drive/Stunden) at claude.ai.",
   "6. Restart your shell so 'clauded' resolves, then start Claude with:  clauded"
 ) | ForEach-Object { Write-Host "  $_" }

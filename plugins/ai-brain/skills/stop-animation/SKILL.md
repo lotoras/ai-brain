@@ -1,6 +1,6 @@
 ---
 name: stop-animation
-description: Use when the user wants a scroll-driven / looping / hover-triggered stop animation of an object transforming, embeddable in an HTML page. Generates 3 AI keyframe stills → a Veo video → extracts frames → recolors or knocks out the backdrop → emits a canvas-driven HTML snippet. Do NOT use for existing videos or simple image carousels.
+description: Use when the user wants a scroll-driven / looping / hover-triggered stop animation of an object transforming, embeddable in an HTML page. Generates 3 AI keyframe stills (ChatGPT, per-keyframe OpenRouter reroute) → a video via the OpenRouter API (browser Veo fallback) → extracts frames → recolors or knocks out the backdrop → emits a canvas-driven HTML snippet. Do NOT use for existing videos or simple image carousels.
 ---
 
 # stop-animation — AI-generated object-transformation canvas animation
@@ -9,8 +9,9 @@ Turn a described (or partially supplied) object transformation into an embeddabl
 animation driven by scroll, autoplay loop, or hover/click. Replicates the proven tschumi pipeline:
 **3 state stills → Veo transition video → frame extraction → backdrop treatment → HTML snippet**.
 
-All image and video generation is **delegated to the existing `media-gen` skill** (Gemini via
-claude-in-chrome). This skill orchestrates; `media-gen` generates.
+All image and video generation is **delegated to the existing `media-gen` skill** (stills via
+ChatGPT in the browser, with a per-keyframe reroute to OpenRouter; video via the OpenRouter API
+by default, browser Veo at gemini.google.com as fallback). This skill orchestrates; `media-gen` generates.
 
 ## When to use / not use
 - **Use** for: "animate my product opening", "book flip animation", "object transformation loop",
@@ -135,12 +136,48 @@ Use the **`media-gen` skill**, one asset at a time:
 Downloads follow the `media-gen` skill (§Download robust method). Copy into the run folder:
 `./stop-animation/<slug>/states/`.
 
+**Per-keyframe reroute:** if the user rejects a ChatGPT still, reroute **that keyframe only** to
+OpenRouter (see `media-gen` §OpenRouter route) with the same prompt, passing the already-approved
+states as `--ref` to keep the LOCKED STYLE consistent. Follow the `media-gen` cost gate: run
+WITHOUT `--yes` first (dry run), show the user the estimate, and re-run with `--yes` only after they
+approve:
+```powershell
+python "${CLAUDE_PLUGIN_ROOT}\skills\media-gen\scripts\openrouter.py" image `
+  --prompt-file "./stop-animation/<slug>/_raw/state2-prompt.txt" `
+  --ref "./stop-animation/<slug>/states/state1.png" `
+  --out "./stop-animation/<slug>/states/state2.png" `
+  --yes   # only after the user approved the dry-run estimate
+```
+
 **CHECKPOINT 1 — user approves all 3 stills before proceeding.**
 Regenerate on: warped typography, style drift between states, heavy CGI look, wrong composition.
 
 ---
 
 ## Phase 3 — Generate video
+
+Default: **OpenRouter API** (no browser, no manual attachments).
+
+**Before generating, give the user a whole-run estimate:** rerouted stills cost about $0.04 each;
+the video is per the dry run (veo-3.1 4s 1080p without audio ≈ $0.80; veo-3.1-fast ≈ $0.40).
+
+1. Write the video prompt to `./stop-animation/<slug>/_raw/video-prompt.txt`.
+2. Run `openrouter.py models --kind video` once to confirm the model supports `last_frame` and
+   to see pricing.
+3. Dry run: run the command below WITHOUT `--yes` (prints the COST ESTIMATE, exit 3), show the user
+   the estimate, today's spend and credits left, and get their explicit go-ahead.
+4. Submit with `--yes` — the script polls and downloads:
+```powershell
+python "${CLAUDE_PLUGIN_ROOT}\skills\media-gen\scripts\openrouter.py" video `
+  --first "./stop-animation/<slug>/states/state1.png" `
+  --last  "./stop-animation/<slug>/states/state3.png" `
+  --prompt-file "./stop-animation/<slug>/_raw/video-prompt.txt" `
+  --out "./stop-animation/<slug>/_raw/input.mp4" `
+  --yes   # omit on the dry run; audio is off by default
+```
+On failure or timeout, use `video --resume JOB_ID --out ...` — never re-submit.
+
+### Fallback — browser Veo
 
 Use `media-gen`'s Veo branch (Gemini → `+` → Create video, Landscape 16:9 or the chosen
 aspect):
@@ -221,6 +258,8 @@ the final static frame at 100vh height — no JavaScript animation fires.
 
 - **Crop is unfixable in post.** Missing pixels aren't in the file. Prevent with moderate zoom.
 - **Veo always redraws text.** It can never be pixel-exact. Aim for "faithful & legible."
+- **OpenRouter video is async and billed per second.** The script polls; on a slow or failed
+  job use `--resume JOB_ID`, never re-submit (double billing).
 - **File dialogs freeze browser automation.** Never click a raw file-upload button; have the
   user attach references manually by dragging onto the composer.
 - **`fetch(blob)` is blocked on Gemini.** Always use the on-page download button.
@@ -244,5 +283,6 @@ the final static frame at 100vh height — no JavaScript animation fires.
 
 ## Siblings
 
-- `media-gen` — all image and video generation (Gemini / Veo).
+- `media-gen` — all image and video generation (ChatGPT stills / OpenRouter reroute and video via
+  `scripts/openrouter.py` / browser Veo fallback).
 - `recolor-icons` — background knockout for single icons (simpler, no video pipeline).

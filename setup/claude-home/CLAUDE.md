@@ -2,9 +2,9 @@
 
 ## Media generation (any project)
 When the user asks to **create / generate / make / draw** an image, picture, icon, logo,
-illustration, or video, use the **media-gen** skill (browser → **Gemini** default, or ChatGPT if
-named) — generate **one asset at a time**. Don't substitute stock or searched assets for a
-generation request.
+illustration, or video, use the **media-gen** skill (browser → **ChatGPT**) — generate **one asset at a time**. Reroute (when a browser result isn't good enough) and default **video**: the **OpenRouter API** via media-gen's `openrouter.py`; key is `OPENROUTER_API_KEY` in `ai-brain/.env`. Don't substitute stock or searched assets for a
+generation request. For pixel art / sprites use the **pixel-art** skill (Opus-direct by default,
+ChatGPT on request; reuse the saved style .md for consistency).
 
 For **icons**: deliver them **dark on a transparent background by default** (knock out the bg, no
 recolor). Recolor only when asked — **solid** in the named color, **gradient** only if "gradient" is
@@ -12,11 +12,11 @@ said; if the user says "recolor" with no color, **ask which**. Use the **recolor
 icon system/library, advise tracing to SVG.
 
 ## Handoffs across models
-See the **threebrain** skill for the orchestration model: Codex for review / adversarial / rescue,
-Gemini (in-browser, via claude-in-chrome) for creative generation — graphic concepts and inventive
-website components — plus video/audio/YouTube perception Claude can't do natively (upload the file
-or paste the link); media-gen for finished image/icon/video assets. Large-context text/code analysis
-stays with Claude (Opus, 1M context); the Gemini CLI role is retired. One delegate per task; pass the
+See the **threebrain** skill for the orchestration model: Codex for review / adversarial / rescue, ChatGPT (in-browser, via claude-in-chrome) for
+video/audio/YouTube perception Claude can't do natively (upload the file or paste the link);
+creative generation (graphic concepts, inventive website components) stays with Claude; media-gen
+for finished image/icon/video assets. Large-context text/code analysis stays with Claude (Opus, 1M
+context). One delegate per task; pass the
 user's phrasing through; serialize browser work.
 
 Project agents follow a standard model policy: architects/planners default to **Opus** and are
@@ -24,11 +24,25 @@ Project agents follow a standard model policy: architects/planners default to **
 use Fable (typically via cc-enhance "use fable") and the session is NOT on Fable 5, by dispatching
 with `model: "fable"` (the dispatch-time override beats the frontmatter default); in Fable 5
 sessions architects always stay Opus — the orchestrator's plan review is the Fable pass, never
-double-pay. Coders run **Sonnet**; exploration is always **Haiku**. **Fable 5 sessions**
+double-pay. Architects run at effort high, xhigh for hard/cross-cutting designs. Coders default
+to **Opus** in frontmatter and are **Sonnet/Haiku-dispatchable**: plan-driven/well-specified coding and test
+writing dispatch with `model: "sonnet"`; purely mechanical, exactly-specified edits (verbatim
+find/replace, ID swaps, template copy/sync) dispatch with `model: "haiku"`, escalating to Sonnet on
+failed verification; escalate to **Opus** for
+cross-cutting, security/auth/billing/migrations, no written plan, a single dependent chain, or a
+Sonnet coder that returned blocked/failed verification. A stuck Sonnet coder returns `Open
+questions` instead of guessing — ask the architect (`SendMessage`) or re-dispatch on Opus. Effort
+medium by default, low for mechanical edits; agent frontmatter can't set effort — the effort values apply to
+workflow `agent()` stages, plain `Agent` dispatches run at the session effort. Locate
+sweeps run on **Haiku** (effort low for plain greps, medium for broad mapping; fallback **Sonnet at
+low effort** only if Haiku is unavailable or its sweep comes back thin), verify/check passes on
+**Haiku** (effort low), judgment reads (summarise, audit, compare) on **Opus at low effort**.
+Route each role to the cheapest tier that holds quality: sweep effort before switching model; cheaper workers pay off for well-specified or parallel work, not for a single dependent chain. **Fable 5 sessions**
 run as strict orchestrators (no direct edits except its own plan file — `*.md` under
 `.claude/plans/`; effort medium). **Opus sessions** plan and
-reason in the main thread, delegate implementation to Sonnet coders, and apply the micro-edit
-exception (one file, few lines, location known — never on Fable). The `session-model-guard`
+reason in the main thread and may make any single-file change, or a small sequential change whose
+context they already hold, directly (never on Fable); they delegate to named coders when work fans
+out across files/layers or bulky reads would flood the main context. The `session-model-guard`
 SessionStart hook injects the per-model policy at the start of each session.
 
 ## Dynamic workflows (standing opt-in)
@@ -38,8 +52,15 @@ Use a workflow (`agent()` / `pipeline()` / `parallel()`) for anything with fan-o
 features, reviews/audits, migrations, research sweeps, verify passes. A single `Agent` dispatch stays
 right for one-step or conversational work. **Every `agent()` stage sets `agentType` or `model`
 explicitly** — stages inherit the main-loop model, so an unset stage runs on Fable, which is never
-wanted: exploration/mechanical → `model: "haiku"`, implementation → the project's named coder
-(Sonnet), planning/judging → its architect (Opus). Stay within the workflow size guideline (default
+wanted: exploration/locate → `model: "haiku"` (fallback `model: "sonnet"` at low effort only if Haiku is
+unavailable or its sweep comes back thin; Haiku effort: low for plain greps, medium for broad
+mapping), verify/check passes → `model: "haiku"` with `effort: "low"`,
+judgment reads → `model: "opus"` with `effort: "low"`, well-specified/plan-driven coding and test
+writing → the named coder with `model: "sonnet"` (`effort: "medium"`), purely mechanical,
+exactly-specified edits (verbatim find/replace, ID swaps, template copy/sync) → the named coder with
+`model: "haiku"` (`effort: "medium"`, escalating to Sonnet on failed verification), cross-cutting/security/no-plan/escalated implementation → the named coder on its
+Opus default, planning/judging → its architect (Opus, `effort: "high"`, `"xhigh"` for hard
+designs). Stay within the workflow size guideline (default
 medium, < 15 agents). Per-project detail: `.claude/rules/workflow.md` → "Dynamic workflows".
 
 This section alone does **not** arm the tool: the Workflow tool only accepts an opt-in that arrives
@@ -62,8 +83,8 @@ whether to run a threebrain pass — **Simplify** (`/simplify`) · **Review** (`
 **Both** · **No**. Let the hook be the single ask: do **not** also offer a threebrain pass in prose
 yourself. Stay silent on read-only / Q&A tasks (the hook stays silent there too). Models for the
 pass: **Simplify** runs on **Opus** (dispatch a `model: "opus"` subagent if the session isn't on
-Opus); **Review** is done by **Codex**, triggered/relayed by a **Sonnet** subagent — Sonnet never
-reviews the code itself.
+Opus); **Review** is done by **Codex**, triggered/relayed by a **Haiku** subagent — Haiku only triggers `/codex:review` and relays
+Codex's output verbatim, never summarising or reviewing the code itself.
 
 Plans and large findings travel as files (`.claude/plans/<task-slug>.md`,
 `.claude/findings/<slug>.md`) — architects/explorers return the file path plus a ≤10-line summary;

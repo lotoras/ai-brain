@@ -14,11 +14,11 @@ fixed; the stack only flavors names, descriptions, conventions, and commands:
 
 | Function | Agent(s) | Tools | Model |
 |---|---|---|---|
-| **Think** (plan/design) | `<domain>-architect` | read-only + explore dispatch: `Bash, Read, Glob, Grep, Agent(Explore, general-purpose)` | `opus` (Fable-upgradeable) |
-| **Build** (implement) | `<domain>-coder` | read+write: `Bash, Glob, Grep, Read, Edit, Write` | `sonnet` |
+| **Think** (plan/design) | `<domain>-architect` | read-only + explore dispatch: `Bash, Read, Glob, Grep, Agent(Explore, general-purpose)` | `opus` (Fable-upgradeable; effort `high`, `xhigh` for hard/cross-cutting designs, then Fable) |
+| **Build** (implement) | `<domain>-coder` | read+write: `Bash, Glob, Grep, Read, Edit, Write` | `opus` frontmatter; dispatched `sonnet` for plan-driven work, `haiku` for purely mechanical edits (escalating to Sonnet on failed verification), Opus for escalation (effort `medium`) |
 | **Test — plan** | `testing-architect` (+ `browser-testing-architect` if e2e) | read-only | `opus` |
-| **Test — write** | `testing-coder` (+ `browser-testing-coder` if e2e) | read+write | `sonnet` |
-| **Explore** (research/info) | `Explore` / `general-purpose` dispatches | — | `haiku`, always |
+| **Test — write** | `testing-coder` (+ `browser-testing-coder` if e2e) | read+write | `opus` frontmatter; dispatched `sonnet` for plan-driven work, `haiku` for purely mechanical edits (escalating to Sonnet on failed verification), Opus for escalation (effort `medium`) |
+| **Explore** (research/info) | `Explore` / `general-purpose` dispatches | — | `haiku` for locate sweeps (find, grep, map; fallback `sonnet` at low effort only if Haiku is unavailable or its sweep comes back thin; effort low for plain greps, medium for broad mapping) and verify/check passes (effort low); `opus` at low effort for judgment reads (summarise, audit, compare) |
 
 **Fable-upgradeable** means: the frontmatter default is `opus`, but when the task explicitly says
 to use Fable (typically via cc-enhance "use fable") AND the session is NOT running on Fable 5, the
@@ -27,7 +27,7 @@ frontmatter default. In Fable 5 sessions, architects always stay Opus — the or
 review is the Fable pass; never double-pay for Fable judgment. Only domain architects are
 Fable-upgradeable; test planners, coders, and exploration never upgrade. Dynamic workflows are the
 default orchestration once a task fans out — workflow `agent()` stages follow the model-mapping
-table in the template's "Dynamic workflows (Workflow tool)" section.
+table in the template's "Dynamic workflows (Workflow tool)" section. Agent frontmatter can't set effort; the effort values apply to workflow `agent()` stages — plain `Agent` dispatches run at the session effort. Route each role to the cheapest tier that holds quality: sweep effort before switching model; cheaper workers pay off for well-specified or parallel work, not for a single dependent chain.
 
 Split per **layer** only when the project genuinely has more than one (e.g. backend + frontend →
 two architect/coder pairs). A mono-layer project (CLI tool, API-only service, library, script

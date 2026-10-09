@@ -79,9 +79,20 @@ const WORKFLOW_OPT_IN =
   ` verify passes over a list of claims. Keep a single Agent dispatch for one-file, one-step,` +
   ` lookup, or conversational work; nothing trivial gets a workflow, but when in doubt, workflow.` +
   ` Mandatory: every agent() call carries an explicit agentType or model — stages inherit the` +
-  ` main-loop model when both are omitted, which is never wanted. Exploration, mapping, greps and` +
-  ` mechanical edits → model: "haiku"; implementation → the project's named Sonnet coder;` +
-  ` planning, design, judging and adversarial review → its Opus architect. Each agent() prompt is a` +
+  ` main-loop model when both are omitted, which is never wanted. Exploration, mapping and greps` +
+  ` (locate) → model: "haiku" (fallback model: "sonnet" at low effort only if Haiku is unavailable or` +
+  ` its sweep comes back thin; Haiku effort: low for plain greps, medium for broad mapping);` +
+  ` verify/check passes → model: "haiku", effort: "low"; judgment reads (summarise, audit, compare)` +
+  ` → model: "opus", effort: "low"; well-specified/plan-driven coding and test writing → the named` +
+  ` coder with model: "sonnet" (effort "medium"); purely mechanical, exactly-specified edits` +
+  ` (verbatim find/replace, ID swaps, template copy/sync) → the named coder with model: "haiku"` +
+  ` (effort "medium"), escalating to Sonnet on failed verification; cross-cutting, security,` +
+  ` no-plan or escalated implementation → the named coder on its Opus default; planning, design,` +
+  ` judging and adversarial review → its Opus architect (effort "high", "xhigh" for hard designs).` +
+  ` A stuck Sonnet coder returns Open questions instead of guessing — ask the architect` +
+  ` (SendMessage) or re-dispatch on Opus. Route each role to the cheapest tier that holds quality:` +
+  ` sweep effort before switching model; cheaper workers pay off for well-specified or parallel` +
+  ` work, not for a single dependent chain. Each agent() prompt is a` +
   ` self-contained brief (objective, exact paths, findings already gathered, constraints, output` +
   ` format + word cap); pass plan/finding file paths between stages, never pasted bodies. Respect` +
   ` the session's workflow size guideline (default medium, aim under 15 agents) — prefer depth over` +
@@ -244,7 +255,12 @@ try {
       ` the sole exception is your own plan file (*.md under .claude/plans/), which you may write` +
       ` and edit directly.` +
       ` Delegate: planning/architecture → the project's Opus architect agents; implementation →` +
-      ` Sonnet coders; exploration/mapping/multi-file reading → Haiku (Explore, model: "haiku").` +
+      ` named coders — Sonnet (model: "sonnet") for plan-driven/well-specified coding and test writing;` +
+      ` Haiku (model: "haiku") for purely mechanical, exactly-specified edits (verbatim find/replace,` +
+      ` ID swaps, template copy/sync), escalating to Sonnet on failed verification; Opus for` +
+      ` escalation (cross-cutting, security, no plan, or a blocked Sonnet coder); exploration/mapping/multi-file reading → Haiku (Explore, model: "haiku"; effort low for plain greps, medium for broad mapping; fallback Sonnet at low effort only if Haiku is unavailable or its sweep comes back thin);` +
+      ` verify/check passes → Haiku (effort low);` +
+      ` judgment reads (summarise, audit, compare) → Opus at low effort.` +
       ` Read at most 1–3 targeted files per task yourself (use offset/limit ranges when known;` +
       ` Grep with head_limit); never pull large tool outputs into the main thread. Every dispatch` +
       ` brief must be self-contained — subagents never see this chat: objective, exact paths,` +
@@ -255,10 +271,17 @@ try {
   } else if (modelClass === 'opus') {
     parts.push(
       `SESSION_MODEL_GUARD policy — Opus session: Keep planning and architecture in the main` +
-      ` thread. Delegate implementation to Sonnet coders and broad exploration to Haiku.` +
-      ` Exception: trivial micro-edits (one file, a few lines, location already known) may be` +
-      ` done directly — dispatch overhead would exceed the savings; anything larger goes through` +
-      ` a named coder. Briefs self-contained (objective, exact paths, gathered findings, output` +
+      ` thread. Any single-file change, or a small sequential change whose context you already` +
+      ` hold, may be done directly. Delegate to named coders when work fans out across files/layers` +
+      ` or bulky reads would flood the main context — Sonnet (model: "sonnet") for plan-driven/` +
+      `well-specified coding and test writing, Haiku (model: "haiku") for purely mechanical,` +
+      ` exactly-specified edits (verbatim find/replace, ID swaps, template copy/sync) escalating to` +
+      ` Sonnet on failed verification, Opus for escalation (cross-cutting, security, no plan, or a` +
+      ` blocked Sonnet coder); locate sweeps go to Haiku (effort low for plain greps, medium for broad` +
+      ` mapping; Sonnet at low effort only if Haiku is unavailable or its sweep comes back thin),` +
+      ` verify/check passes to Haiku (effort low), judgment reads to Opus at low effort. Route each role to` +
+      ` the cheapest tier that holds quality: sweep effort before switching model; cheaper workers` +
+      ` pay off for well-specified or parallel work, not for a single dependent chain. Briefs self-contained (objective, exact paths, gathered findings, output` +
       ` format); compact returns; Grep head_limit; ranged reads; continue agents over respawning.` +
       ` If the session model changes mid-session, adopt the matching policy.`
     );
@@ -269,9 +292,13 @@ try {
       ` flag or fresh install). Identify your model from your system prompt and apply the` +
       ` matching policy: Fable 5 → strict orchestrator (never edit directly except plan files` +
       ` under .claude/plans/; delegate planning` +
-      ` to Opus architects, code to Sonnet, exploration to Haiku; 1–3 targeted reads max).` +
-      ` Opus → plan in the main thread, delegate implementation to Sonnet and exploration to` +
-      ` Haiku (micro-edit exception for tiny known-location changes). If you are Fable 5 and` +
+      ` to Opus architects, code to named coders, exploration to Haiku; 1–3 targeted reads max).` +
+      ` Opus → plan in the main thread; single-file or small sequential changes may be done` +
+      ` directly (never on Fable); delegate fan-out work to named coders and exploration to Haiku.` +
+      ` Coders: Sonnet (model: "sonnet") for plan-driven/well-specified coding and test writing, Haiku` +
+      ` (model: "haiku") for purely mechanical, exactly-specified edits, Opus for escalation` +
+      ` (cross-cutting, security, no plan, or a blocked Sonnet coder).` +
+      ` If you are Fable 5 and` +
       ` effort appears above medium, mention it to the user once.`
     );
   }

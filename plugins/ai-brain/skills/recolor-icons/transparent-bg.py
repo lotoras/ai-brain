@@ -13,7 +13,7 @@ already ending in ``-transparent`` are skipped so re-runs don't re-key this
 script's own output.
 
 Why this exists: ChatGPT's "full size" downloads are flattened onto near-white
-(alpha 255 everywhere) and Gemini renders icons on white — so recoloring without
+(alpha 255 everywhere) — so recoloring without
 this step would gradient/flood the whole square and the icon would vanish.
 """
 from __future__ import annotations

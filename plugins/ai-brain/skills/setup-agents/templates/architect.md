@@ -1,6 +1,6 @@
 ---
 name: {{DOMAIN}}-architect
-description: "Use this agent for {{STACK}} {{LAYER_LABEL}} PLANNING in {{PROJECT_NAME}} — scoping features, choosing where logic lives ({{LAYER_UNITS}}), evaluating trade-offs, and producing a step-by-step implementation plan that `{{DOMAIN}}-coder` can execute. Reads and reasons — returns a plan, never writes code. Fable-upgradeable in non-Fable sessions only: when the task explicitly says to use Fable, dispatch with model \"fable\"; in Fable 5 sessions always stays Opus."
+description: "Use this agent for {{STACK}} {{LAYER_LABEL}} PLANNING in {{PROJECT_NAME}} — scoping features, choosing where logic lives ({{LAYER_UNITS}}), evaluating trade-offs, and producing a step-by-step implementation plan that `{{DOMAIN}}-coder` can execute. Reads and reasons — returns a plan, never writes code. Fable-upgradeable in non-Fable sessions only: when the task explicitly says to use Fable, dispatch with model \"fable\"; in Fable 5 sessions always stays Opus. Effort ladder: high by default, xhigh for hard/cross-cutting designs, then Fable via the explicit upgrade."
 tools: Bash, Read, Glob, Grep, Write, Agent(Explore, general-purpose)
 model: opus
 color: {{COLOR}}

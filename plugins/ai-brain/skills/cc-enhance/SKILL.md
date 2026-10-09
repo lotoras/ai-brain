@@ -1,6 +1,6 @@
 ---
 name: cc-enhance
-description: Enhance a raw prompt for Claude Code. Auto-infers role from the project (CLAUDE.md / README / docs) via a Haiku sub-agent, then returns a short prompt with Role + sharpened Task. Tuned for Opus — no imposed plan/scope/stop scaffolding. Routes image/video/icon tasks to the media-gen skill.
+description: Enhance a raw prompt for Claude Code. Auto-infers role from the project (CLAUDE.md / README / docs) via a Haiku sub-agent, then returns a short prompt with Role + sharpened Task. Tuned for Opus — no imposed plan/scope/stop scaffolding. Routes image/video/icon tasks to the media-gen skill. Always ends the enhanced Task with the `use ultracode` keyword to arm multi-agent workflows.
 argument-hint: [rough description of what you want Claude Code to do]
 ---
 
@@ -28,10 +28,10 @@ Use the returned line as the role. If the agent returns nothing useful, infer th
 
 If the raw task is about **generating / creating an image, picture, icon, logo, illustration, or
 video** — or clearly trends that direction — the enhanced **Task** must explicitly instruct Claude
-Code to **use the `media-gen` skill** (browser → Gemini default / ChatGPT, generating **one asset at
+Code to **use the `media-gen` skill** (browser → ChatGPT, generating **one asset at
 a time**). For **icons**, the Task must also name the **`recolor-icons`** step and its default:
 deliver the icon **dark on transparent** unless a color is requested (solid if a color is named,
-gradient only if "gradient" is said; ask which color if "recolor" is said with none). Bake this into
+gradient only if "gradient" is said; ask which color if "recolor" is said with none). For **pixel art / sprite / tileset** tasks, name the `pixel-art` skill instead. Bake this into
 the prompt text — do not add commentary outside the single output block.
 
 ## Step 1.6 — Fable upgrade (model routing)
@@ -51,6 +51,16 @@ with exactly this instruction (consume the trigger words; do not repeat them as 
 > planners, and exploration always keep their default models.
 
 Without a trigger, add nothing — architects run on their Opus default.
+
+## Step 1.7 — Ultracode keyword (always)
+
+Every enhanced **Task** must end with the keyword directive `use ultracode` (as its final
+sentence, e.g. "Use ultracode."). This arms the Workflow tool's multi-agent opt-in in the
+receiving session — append it on every enhancement, regardless of task shape.
+
+Placement: if Step 1.6's Fable-upgrade instruction is triggered, put "Use ultracode." immediately
+BEFORE that block, so the Fable instruction still ends the Task exactly as Step 1.6 requires.
+If the raw task already contains "ultracode", do not duplicate it — exactly one occurrence.
 
 ## Step 2 — Build the prompt
 

@@ -1,6 +1,6 @@
 ---
 name: browser-testing-architect
-description: "Use this agent for BROWSER (end-to-end) test PLANNING in {{PROJECT_NAME}} — {{E2E_TOOLING}} flows. Designs user-journey scenarios, wait/hydration strategies, selector choices ({{SELECTOR_PRIORITY}}), and cleanup. Produces a plan that `browser-testing-coder` executes. For unit/feature tests, use `testing-architect` instead. Reads and reasons — returns a plan, never writes tests."
+description: "Use this agent for BROWSER (end-to-end) test PLANNING in {{PROJECT_NAME}} — {{E2E_TOOLING}} flows. Designs user-journey scenarios, wait/hydration strategies, selector choices ({{SELECTOR_PRIORITY}}), and cleanup. Produces a plan that `browser-testing-coder` executes. For unit/feature tests, use `testing-architect` instead. Reads and reasons — returns a plan, never writes tests. Effort ladder: high by default, xhigh for hard/cross-cutting designs."
 tools: Bash, Read, Glob, Grep, Write, Agent(Explore, general-purpose)
 model: opus
 color: yellow
