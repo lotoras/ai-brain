@@ -66,7 +66,7 @@ If the user's raw prompt contains one of those explicit directives, the enhanced
 with exactly this instruction (consume the trigger words; do not repeat them as task content):
 
 > Run this as a Codex pipeline: Codex writes the red tests via the `codex:codex-rescue` agent
-> (`--model gpt-6.1-sol --effort medium`) → Sonnet coders implement (never editing tests) → verify
+> (`--model gpt-6.1-sol`, `--effort medium` (`high` for auth/billing/migrations/concurrency/complex parsing)) → Sonnet coders implement (never editing tests) → verify
 > (2 failed fix rounds → `/codex:rescue`) → done. Codex may read the whole project and run the test suite.
 > No automatic review or simplify — leave both to the Stop hook.
 

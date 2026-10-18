@@ -57,7 +57,7 @@ coders.
 **Codex pipeline (opt-in)** — only when the user explicitly says "use codex" ("with codex", "via
 codex", "run it through codex"; bare mentions of Codex as subject matter are NOT triggers), **Codex
 writes the failing tests first** (spec-first, decorrelated from the implementer): dispatch the
-`codex:codex-rescue` agent (`--model gpt-6.1-sol --effort medium`) with the same brief. Codex may
+`codex:codex-rescue` agent (`--model gpt-6.1-sol --effort medium`; `--effort high` for auth/billing/migrations/concurrency/money-date math/complex parsing) with the same brief. Codex may
 read the whole project and run the test suite. If Codex is unavailable or out of quota, fall back to
 the `testing-coder`.
 

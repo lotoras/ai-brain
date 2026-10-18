@@ -49,7 +49,7 @@ matter are not triggers. Then: **Codex writes the failing tests** (`codex:codex-
 `/codex:rescue`) → done. No automatic Codex review and no automatic Simplify — the Stop hook's offer
 is the only trigger for both. Codex unavailable → `testing-coder` writes the tests.
 Codex (default `gpt-6-astra` @ high for review/rescue, pinned in `~/.codex/config.toml`; tests use
-`gpt-6.1-sol` @ medium per call) runs on the ChatGPT subscription only (forced) and reads the project's
+`gpt-6.1-sol` @ medium (high for risky domains) per call) runs on the ChatGPT subscription only (forced) and reads the project's
 CLAUDE.md as its project doc — never use the plugin's stale `spark` alias; keep its stop-review gate off.
 
 Project agents follow a standard model policy: architects/planners default to **Opus** and are

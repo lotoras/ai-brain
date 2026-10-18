@@ -30,7 +30,7 @@ the `setup-brain` skill runs the script and walks you through the logins.
    merges `setup/codex-home/config.toml` into `~/.codex/config.toml` to pin the default
    `model = "gpt-6-astra"` + `model_reasoning_effort = "high"` (serves `/codex:review` and
    `/codex:rescue`; the "use codex" test-writing step overrides it per call with
-   `--model gpt-6.1-sol --effort medium`): copied if missing, prepended if the file has no top-level
+   `--model gpt-6.1-sol --effort medium`, high for risky domains): copied if missing, prepended if the file has no top-level
    `model =` line (backup kept alongside), left untouched with a notice if it already sets a model.
    The same template also carries three top-level keys: `forced_login_method = "chatgpt"`
    (subscription only, never an API-key fallback), `project_doc_fallback_filenames = ["CLAUDE.md"]`
