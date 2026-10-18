@@ -38,12 +38,13 @@
  * agent runs, gets `"finished": true` on completion, and loses it again when the agent is resumed
  * via SendMessage (Bash background tasks have no meta file). That state is window-independent and
  * resume-aware; an agent whose transcript hasn't been written for 30 min is treated as dead.
- * Edits seen while agents are pending are remembered in <session>/threebrain-deferred.json
- * ({ sensitive }) so they survive typed user turns in between — no cross-turn transcript
- * walking. Once nothing is pending the next Stop asks (changed code OR a deferral file),
- * deletes the file, and the hook's own reason (anti-loop guard 2) also deletes it.
+ * While agents are pending (even with nothing changed yet) the hook records the window in
+ * <session>/threebrain-deferred.json ({ changed, sensitive, agents: { id: earliest boundary } }),
+ * so edits survive typed user turns in between — no cross-turn transcript walking. Once nothing
+ * is pending the next Stop replays it (scanning each recorded agent from its recorded boundary),
+ * asks if code changed, and deletes the file; the hook's own reason (guard 2) also deletes it.
  *
-  * Review invocation: /codex:review and /codex:adversarial-review are user-only slash
+ * Review invocation: /codex:review and /codex:adversarial-review are user-only slash
  * commands (disable-model-invocation), so the reason names the command a Haiku relay can
  * actually run: `node "<plugin>/scripts/codex-companion.mjs" review --scope working-tree`.
  *
@@ -127,21 +128,23 @@ function isAgent(tpath, id) {
   catch (_) { return false; }
 }
 
-// True if any subagent of this session is still running: its meta has no `finished: true`
-// and its transcript was written within STALE_MS. Any error -> not pending (fail-silent).
+// Ids of this session's subagents still running: meta has no `finished: true` and the transcript
+// was written within STALE_MS. Any error -> not pending (fail-silent).
 function pendingAgents(tpath) {
   try {
     const dir = subagentPath(tpath, '');
-    return fs.readdirSync(dir).some(function (f) {
+    const ids = [];
+    fs.readdirSync(dir).forEach(function (f) {
       const m = /^agent-(.+)\.meta\.json$/.exec(f);
-      if (!m) return false;
+      if (!m) return;
       try {
         const meta = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-        if (meta && meta.finished === true) return false;
-        return Date.now() - fs.statSync(path.join(dir, 'agent-' + m[1] + '.jsonl')).mtimeMs < STALE_MS;
-      } catch (_) { return false; }
+        if (meta && meta.finished === true) return;
+        if (Date.now() - fs.statSync(path.join(dir, 'agent-' + m[1] + '.jsonl')).mtimeMs < STALE_MS) ids.push(m[1]);
+      } catch (_) { /* unreadable / no transcript: not pending */ }
     });
-  } catch (_) { return false; }
+    return ids;
+  } catch (_) { return []; }
 }
 
 // Session-scoped deferral file (see header). All three helpers are fail-silent.
@@ -153,11 +156,21 @@ function readDeferred(tpath) {   // null = no file; {} = file with unreadable co
   try { txt = fs.readFileSync(deferredPath(tpath), 'utf8'); } catch (_) { return null; }
   try { return JSON.parse(txt) || {}; } catch (_) { return {}; }
 }
-function writeDeferred(tpath, sensitive) {
+// Merge into the file: { changed, sensitive, agents: { <pendingId>: <since ms epoch | null> } }.
+// `since` is the EARLIEST window boundary seen while the agent was pending (existing entries win;
+// null = no boundary, scan all), so the completion Stop can still find the agent's earlier edits
+// even though its own window starts at a newer typed turn.
+function writeDeferred(tpath, changed, sensitive, ids, since) {
   try {
-    const prev = readDeferred(tpath);
+    const prev = readDeferred(tpath) || {};
+    const agents = prev.agents && typeof prev.agents === 'object' ? prev.agents : {};
+    ids.forEach(function (id) {
+      if (!Object.prototype.hasOwnProperty.call(agents, id)) agents[id] = isNaN(since) ? null : since;
+    });
     fs.mkdirSync(path.dirname(deferredPath(tpath)), { recursive: true });
-    fs.writeFileSync(deferredPath(tpath), JSON.stringify({ sensitive: !!(prev && prev.sensitive) || sensitive }));
+    fs.writeFileSync(deferredPath(tpath), JSON.stringify({
+      changed: !!prev.changed || changed, sensitive: !!prev.sensitive || sensitive, agents: agents
+    }));
   } catch (_) { /* best effort */ }
 }
 function clearDeferred(tpath) {
@@ -338,18 +351,30 @@ if (!blindSpot) {
   });
 }
 
-// Pending subagents (from the meta files, not the transcript) -> defer: remember that this
-// window changed code (and whether it was sensitive) in the session's deferral file and stay
-// silent. A later Stop with nothing pending asks — even if its own window is read-only (e.g. the
-// completion-notification turn) — so edits survive user turns without any cross-turn walking.
+// Pending subagents (from the meta files, not the transcript) -> defer: ALWAYS record the window
+// (changed code?, sensitive?) and each pending agent with its earliest boundary in the session's
+// deferral file, then stay silent. A later Stop with nothing pending replays it — even if its own
+// window is read-only or starts at a newer typed turn (so scanSubagent's `since` would hide the
+// agent's earlier edits) — so edits survive user turns without any cross-turn walking.
 const sensitive = changedPaths.some(function (p) { return SENSITIVE_PATH.test(p); });
-if (pendingAgents(tp)) {
-  if (changedCode) writeDeferred(tp, sensitive);
+const pending = pendingAgents(tp);
+if (pending.length) {
+  writeDeferred(tp, changedCode, sensitive, pending, boundaryTs);
   stop();
 }
 const deferred = readDeferred(tp);
-if (changedCode || deferred) {
-  clearDeferred(tp);
-  ask(sensitive || !!(deferred && deferred.sensitive));
+let deferredChanged = false, deferredSensitive = false;
+if (deferred) {
+  const filePaths = [];
+  const agents = deferred.agents && typeof deferred.agents === 'object' ? deferred.agents : {};
+  // A file without an explicit `changed: false` (older format) means code did change.
+  deferredChanged = deferred.changed !== false;
+  Object.keys(agents).forEach(function (id) {
+    const since = typeof agents[id] === 'number' ? agents[id] : NaN;
+    if (SAFE_AGENT_ID.test(id) && scanSubagent(tp, id, since, filePaths)) deferredChanged = true;
+  });
+  deferredSensitive = !!deferred.sensitive || filePaths.some(function (p) { return SENSITIVE_PATH.test(p); });
+  clearDeferred(tp); // always consumed once nothing is pending (ask or not)
 }
+if (changedCode || deferredChanged) ask(sensitive || deferredSensitive);
 stop();

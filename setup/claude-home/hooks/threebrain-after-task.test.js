@@ -68,6 +68,10 @@ function deferredFile(tp) { return path.join(sessionDir(tp), 'threebrain-deferre
 function setMeta(tp, id, meta) {
   fs.writeFileSync(path.join(sessionDir(tp), 'subagents', 'agent-' + id + '.meta.json'), JSON.stringify(meta));
 }
+function rewriteAgent(tp, id, records) {
+  fs.writeFileSync(path.join(sessionDir(tp), 'subagents', 'agent-' + id + '.jsonl'),
+    records.map(function (r) { return JSON.stringify(r); }).join(String.fromCharCode(10)) + String.fromCharCode(10));
+}
 function rewrite(tp, records) {
   fs.writeFileSync(tp, records.map(function (r) { return JSON.stringify(r); }).join('\n') + '\n');
 }
@@ -219,7 +223,7 @@ test('(A) Edit + unfinished agent -> silent and deferral file written', function
   const tp = fixture([typed('go', 0), tool('Agent', AGENT, 1), asyncLaunch('bg1', 2), EDIT(3)],
     { bg1: [READ(5)] }, { bg1: {} });
   expectSilent(run(tp));
-  assert.deepStrictEqual(JSON.parse(fs.readFileSync(deferredFile(tp), 'utf8')), { sensitive: false });
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(deferredFile(tp), 'utf8')), { changed: true, sensitive: false, agents: { bg1: T0 } });
 });
 
 test('(B) later Stop, agent finished, read-only window -> block, deferral file deleted', function () {
@@ -264,10 +268,36 @@ test('(G) sensitive edit deferred, later read-only window after finish -> advers
   const tp = fixture([typed('go', 0), tool('Write', { file_path: '/app/src/auth/Hasher.php' }, 1), asyncLaunch('bg1', 2)],
     { bg1: [READ(5)] }, { bg1: {} });
   expectSilent(run(tp));
-  assert.deepStrictEqual(JSON.parse(fs.readFileSync(deferredFile(tp), 'utf8')), { sensitive: true });
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(deferredFile(tp), 'utf8')), { changed: true, sensitive: true, agents: { bg1: T0 } });
   setMeta(tp, 'bg1', { finished: true });
   rewrite(tp, [typed('go', 0), typed('status?', 10), READ(11)]);
   assert.ok(expectBlock(run(tp)).includes('adversarial-review --scope working-tree'));
+});
+
+// (H)/(I): agent pending at Stop 1 with a read-only window (so nothing is "changed" yet); Stop 2 is a
+// newer typed turn whose own window starts after the agent's work, so only the recorded `since` finds it.
+function stopOnePending() {
+  const tp = fixture([typed('go', 0), READ(1), tool('Agent', AGENT, 2), asyncLaunch('bg1', 3)],
+    { bg1: [READ(5)] }, { bg1: {} });
+  expectSilent(run(tp));
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(deferredFile(tp), 'utf8')),
+    { changed: false, sensitive: false, agents: { bg1: T0 } });
+  setMeta(tp, 'bg1', { finished: true });
+  rewrite(tp, [typed('go', 0), READ(1), typed('later question', 10), READ(11), notification('bg1', 20)]);
+  return tp;
+}
+
+test('(H) read-only Stop while agent pending, agent edits, newer typed turn, agent done -> block', function () {
+  const tp = stopOnePending();
+  rewriteAgent(tp, 'bg1', [READ(5), tool('Write', { file_path: '/app/src/foo.js' }, 6)]);
+  expectBlock(run(tp));
+  assert.ok(!fs.existsSync(deferredFile(tp)));
+});
+
+test('(I) same as (H) but the agent never wrote -> silent, file deleted', function () {
+  const tp = stopOnePending();
+  expectSilent(run(tp));
+  assert.ok(!fs.existsSync(deferredFile(tp)));
 });
 
 let failed = 0;
