@@ -59,7 +59,7 @@ $winSrc = Join-Path $root 'codex-home/config.windows.toml'
 $winHdr = '(?m)^\s*\[\s*(?:windows|"windows"|''windows'')\s*(?:\.[^\]]*)?\]'
 # top-level keys also provisioned from the template (added when missing, never overridden)
 $extraKeys = 'forced_login_method','project_doc_fallback_filenames','sandbox_workspace_write.network_access','sandbox_workspace_write.writable_roots'   # writable_roots is rendered per machine, not in the template
-$sbHdr = '(?m)^\s*\[\s*sandbox_workspace_write\s*(?:\.[^\]]*)?\]'   # a [sandbox_workspace_write] table conflicts with the dotted key
+$sbHdr = '(?m)^\s*\[\s*(?:sandbox_workspace_write|"sandbox_workspace_write"|''sandbox_workspace_write'')\s*(?:\.[^\]]*)?\]'   # a [sandbox_workspace_write] table conflicts with the dotted key
 function HasTopKey($t,$k){
   $top = ($t -split '(?m)^\s*\[', 2)[0]
   if($k -like 'sandbox_workspace_write.*' -and $top -match '(?m)^\s*sandbox_workspace_write\s*='){ return $true }

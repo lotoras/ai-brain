@@ -52,7 +52,7 @@ KEYRE='{l=$0; sub(/^[[:space:]]+/,"",l)} index(l,k)==1 && substr(l,length(k)+1) 
 cfg_has(){ awk -v k="$2" '/^[[:space:]]*\[/{exit} '"$KEYRE"'{f=1} END{exit !f}' "$1"; }  # key set in the top-level region
 cfg_skip(){  # key present, or network_access while a sandbox_workspace_write table/inline value would conflict with the dotted key
   cfg_has "$1" "$2" && return 0
-  case "$2" in sandbox_workspace_write.*) cfg_has "$1" sandbox_workspace_write || grep -Eq '^[[:space:]]*\[[[:space:]]*sandbox_workspace_write[[:space:]]*(\.[^]]*)?\]' "$1";; *) return 1;; esac
+  case "$2" in sandbox_workspace_write.*) cfg_has "$1" sandbox_workspace_write || grep -Eq "^[[:space:]]*\[[[:space:]]*[\"']?sandbox_workspace_write[\"']?[[:space:]]*(\.[^]]*)?\]" "$1";; *) return 1;; esac
 }
 cfg_bak(){ [ -n "${CFG_BAK:-}" ] || { CFG_BAK="$CFG_DST.bak-$(date +%Y%m%d-%H%M%S)"; cp "$CFG_DST" "$CFG_BAK"; }; }  # one backup per run
 if [ -f "$CFG_SRC" ]; then
@@ -72,7 +72,10 @@ if [ -f "$CFG_SRC" ]; then
       cfg_has "$CFG_DST" "$k" && continue
       cfg_skip "$CFG_DST" "$k" && { warn "~/.codex/config.toml has a [sandbox_workspace_write] table - add $k there yourself"; continue; }
       case "$k" in  # npm/composer caches, so installs work in the sandbox
-        *.writable_roots) line="$k = [\"$HOME/.npm\", \"$HOME/.cache/composer\", \"$HOME/.composer\"]";;
+        *.writable_roots)
+          if [ -n "${LOCALAPPDATA:-}" ]; then  # Git Bash on Windows: native npm/Composer caches, as in setup.ps1
+            line="$k = ['$LOCALAPPDATA\\npm-cache', '$LOCALAPPDATA\\Composer']"
+          else line="$k = [\"$HOME/.npm\", \"$HOME/.cache/composer\", \"$HOME/.composer\"]"; fi;;
         *) line=$(awk -v k="$k" "$KEYRE"'{print; exit}' "$CFG_SRC" | tr -d '\r');;
       esac; [ -n "$line" ] || continue
       cfg_bak
