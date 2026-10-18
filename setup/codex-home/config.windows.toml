@@ -1,0 +1,4 @@
+[windows]
+# Native Windows: without this, Codex silently downgrades --write / workspace-write to read-only,
+# so codex:codex-rescue can't write tests or fixes. "unelevated" needs no admin; "elevated" needs admin setup.
+sandbox = "unelevated"

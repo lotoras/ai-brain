@@ -52,21 +52,29 @@ foreach($t in @(@{cmd='codex';pkg='@openai/codex@latest';upgrade=$true})){
 # Codex model pin: merge setup/codex-home/config.toml -> ~/.codex/config.toml (never overrides an existing model)
 $cfgSrc = Join-Path $root 'codex-home/config.toml'
 $cfgDst = Join-Path $env:USERPROFILE '.codex/config.toml'
+# and, on Windows, codex-home/config.windows.toml (without [windows] sandbox, Codex silently runs --write read-only).
+# Read once, merge in memory, then one backup + one UTF-8 (no BOM) write — and only if something changed.
+$winSrc = Join-Path $root 'codex-home/config.windows.toml'
+# matches [windows], [ windows ], ["windows"], ['windows'] and any [windows.<sub>] table
+$winHdr = '(?m)^\s*\[\s*(?:windows|"windows"|''windows'')\s*(?:\.[^\]]*)?\]'
 if(Test-Path $cfgSrc){
-  if($Check){ Would "merge codex-home/config.toml -> ~/.codex/config.toml (copy if missing; prepend if no top-level model; else leave)" }
-  elseif(-not (Test-Path $cfgDst)){
-    New-Item -ItemType Directory -Force -Path (Split-Path $cfgDst) | Out-Null
-    Copy-Item $cfgSrc $cfgDst -Force
-    Ok "wrote ~/.codex/config.toml (model pin)"
-  } else {
-    $top = @(); foreach($l in (Get-Content $cfgDst)){ if($l -match '^\s*\['){ break }; $top += $l }
-    if(@($top | Where-Object { $_ -match '^\s*model\s*=' }).Count){
-      Warn "~/.codex/config.toml already sets a model - left as-is (template pin: $cfgSrc)"
-    } else {
-      Copy-Item $cfgDst "$cfgDst.bak-$(Get-Date -Format 'yyyyMMdd-HHmmss')" -Force
-      $merged = (Get-Content $cfgSrc -Raw).TrimEnd() + "`n`n" + (Get-Content $cfgDst -Raw)
-      [System.IO.File]::WriteAllText($cfgDst, $merged, (New-Object System.Text.UTF8Encoding($false)))
-      Ok "prepended model pin to ~/.codex/config.toml (backup kept alongside)"
+  if($Check){ Would "merge codex-home/config.toml -> ~/.codex/config.toml (copy if missing; prepend if no top-level model; append config.windows.toml unless a [windows] table exists)" }
+  else {
+    $orig = if(Test-Path $cfgDst){ [System.IO.File]::ReadAllText($cfgDst) } else { $null }
+    $text = $orig
+    if($null -eq $text){ $text = [System.IO.File]::ReadAllText($cfgSrc); Ok "wrote ~/.codex/config.toml (model pin)" }
+    elseif(($text -split '(?m)^\s*\[', 2)[0] -match '(?m)^\s*model\s*='){ Warn "~/.codex/config.toml already sets a model - left as-is (template pin: $cfgSrc)" }
+    else { $text = [System.IO.File]::ReadAllText($cfgSrc).TrimEnd() + "`n`n" + $text; Ok "prepended model pin to ~/.codex/config.toml" }
+
+    if(Test-Path $winSrc){
+      if($text -match $winHdr){ Ok "~/.codex/config.toml already has a [windows] table" }
+      else { $text = $text.TrimEnd() + "`n`n" + [System.IO.File]::ReadAllText($winSrc); Ok "appended [windows] sandbox = unelevated to ~/.codex/config.toml (enables Codex --write)" }
+    }
+
+    if($text -cne $orig){
+      if($null -eq $orig){ New-Item -ItemType Directory -Force -Path (Split-Path $cfgDst) | Out-Null }
+      else { Copy-Item $cfgDst "$cfgDst.bak-$(Get-Date -Format 'yyyyMMdd-HHmmss')" -Force; Info "backup kept alongside ~/.codex/config.toml" }
+      [System.IO.File]::WriteAllText($cfgDst, $text, (New-Object System.Text.UTF8Encoding($false)))
     }
   }
 }

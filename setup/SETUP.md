@@ -30,6 +30,10 @@ the `setup-brain` skill runs the script and walks you through the logins.
    merges `setup/codex-home/config.toml` into `~/.codex/config.toml` to pin `model = "gpt-6.1-sol"`
    + `model_reasoning_effort = "high"`: copied if missing, prepended if the file has no top-level
    `model =` line (backup kept alongside), left untouched with a notice if it already sets a model.
+   On Windows (`setup.ps1`) it also appends `setup/codex-home/config.windows.toml`
+   (`[windows] sandbox = "unelevated"`) unless a `[windows]` table exists — without it native
+   Windows Codex silently downgrades `--write` to read-only, so `codex:codex-rescue` can't write
+   tests or fixes. `setup.sh` (macOS/Linux) doesn't need it.
    Don't use the codex plugin's `spark` alias — it maps to the stale `gpt-5.3-codex-spark`.
 3. **Marketplaces** — adds `anthropics/claude-plugins-official`, `openai/codex-plugin-cc`,
    `lotoras/ai-brain`.
