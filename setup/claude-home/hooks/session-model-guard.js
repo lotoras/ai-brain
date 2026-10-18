@@ -267,7 +267,7 @@ try {
       ` findings already gathered, constraints, required output format. Prefer continuing an` +
       ` existing agent (SendMessage) over respawning a new one. If the session model changes` +
       ` mid-session, adopt the policy matching the new model. Your value is judgment per token.` +
-      ` Planned work: Sonnet testing-coder tests → Sonnet code → Opus simplify last; only when the user says "use codex" does Codex write the tests and review.`
+      ` Planned work: Sonnet testing-coder tests → Sonnet code → verify (Codex writes the tests only when the user says "use codex"); Simplify and Review run only when the user picks them in the threebrain Stop hook.`
     );
   } else if (modelClass === 'opus') {
     parts.push(
@@ -285,7 +285,7 @@ try {
       ` pay off for well-specified or parallel work, not for a single dependent chain. Briefs self-contained (objective, exact paths, gathered findings, output` +
       ` format); compact returns; Grep head_limit; ranged reads; continue agents over respawning.` +
       ` If the session model changes mid-session, adopt the matching policy.` +
-      ` Planned work: Sonnet testing-coder tests → Sonnet code → Opus simplify last; only when the user says "use codex" does Codex write the tests and review.`
+      ` Planned work: Sonnet testing-coder tests → Sonnet code → verify (Codex writes the tests only when the user says "use codex"); Simplify and Review run only when the user picks them in the threebrain Stop hook.`
     );
   } else {
     // unknown — model set via CLI flag or fresh install

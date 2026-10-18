@@ -22,9 +22,10 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
 4. **Dispatch** (in parallel when layers are independent), then **verify**: review the compact
    return, run {{TEST_COMMAND}}, confirm the diff is minimal before reporting done. If the task
    fans out across many files/layers/concerns, script it as a **workflow** instead of hand-chaining
-   dispatches — see "Dynamic workflows (Workflow tool)". Planned work follows Phases 3–7
-   (`testing-coder` tests → Sonnet code → verify → Opus simplify last; with "use codex": Codex tests →
-   Sonnet code → verify → Codex review → Opus simplify last).
+   dispatches — see "Dynamic workflows (Workflow tool)". Planned work follows Phases 3–5
+   (`testing-coder` tests → Sonnet code → verify; with "use codex": Codex tests → Sonnet code →
+   verify). Simplify and Review are not pipeline phases — they run only when the user picks them in
+   the threebrain Stop hook (see "After verify — Stop hook").
 
 ## Phase 1: Understand
 
@@ -90,22 +91,22 @@ those tests — if one looks wrong, it flags it in its return and the orchestrat
 - After **2 failed fix rounds**, stop retrying: escalate to an Opus coder, or hand off to
   `/codex:rescue` when the Codex pipeline is on.
 
-## Phase 6: Review (Codex) — only on "use codex"
+## After verify — Stop hook (not a pipeline phase)
 
-Not a default phase: review otherwise stays with the Stop-hook offer and the explicit review /
-sensitive-path triggers. When the user opted into the Codex pipeline ("use codex"), run
-`node "<plugin>/scripts/codex-companion.mjs" review --scope working-tree` through a Haiku relay
-(`adversarial-review` instead if `src/auth/**`, `**/migrations/**`, or `**/billing/**` were
-touched). Give findings to a Sonnet coder to fix under
-`superpowers:receiving-code-review` discipline (verify each finding, don't blindly apply), then
-re-run the tests. **Fallback** — Codex unavailable or out of quota: `superpowers:requesting-code-review`.
-The Codex plugin's stop-review gate stays disabled (it duplicates this phase; 900s timeout).
+The pipeline ends at Phase 5. Neither Simplify nor the Codex review runs automatically — in the
+default pipeline or the "use codex" pipeline. The global threebrain Stop hook offers them after a
+code change (Simplify · Review · Review + Simplify · No) and they run only on the user's choice:
+- **Simplify** — `/simplify` on Opus (needs whole-repo context), then re-run the tests.
+- **Review** — `node "<plugin>/scripts/codex-companion.mjs" review --scope working-tree` through a
+  Haiku relay (`adversarial-review` if `src/auth/**`, `**/migrations/**`, or `**/billing/**` were
+  touched); findings go to a Sonnet coder under `superpowers:receiving-code-review` discipline
+  (verify each finding, don't blindly apply), then re-run the tests. Fallback if Codex is
+  unavailable: `superpowers:requesting-code-review`.
+- **Review + Simplify** — Review → Sonnet fixes findings → Opus `/simplify` last.
 
-## Phase 7: Simplify (Claude Opus, last)
-
-Run `/simplify` last — it needs whole-repo context — then re-run the tests. The global threebrain
-Stop hook offers this and Review (Simplify · Review · Review + Simplify · No); micro-edits skip
-straight to that ask.
+Unchanged: explicit review phrases ("review this", "tear this apart", "rescue") and the forced
+adversarial review on sensitive paths still fire on their own. The Codex plugin's stop-review gate
+stays disabled (900s timeout). Micro-edits skip straight to the Stop-hook ask.
 
 ## Session-model discipline
 

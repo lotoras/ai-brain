@@ -35,12 +35,12 @@ collection) gets a single pair. Never invent layers the project doesn't have.
 
 For planned work, the `testing-coder` (Sonnet) writes the first failing tests by default. Only when
 the user says "use codex" does **Codex write the first failing tests** (via the `codex:codex-rescue`
-agent) and review afterward — no Codex agent is provisioned. `testing-architect` / `testing-coder`
+agent) — no Codex agent is provisioned. `testing-architect` / `testing-coder`
 stay provisioned as the default test writers (and the Codex fallback when Codex is unavailable or out
 of quota) and as owners of test infrastructure (fixtures, factories, helpers).
 
-After-task simplify/review passes are global (threebrain Stop hook) — do not re-provision them
-here; the CLAUDE.md section template already references them without restating their routing.
+Simplify and Review are not pipeline phases: they run only when the user picks them in the global
+threebrain Stop hook — do not re-provision them here; the CLAUDE.md section template already references them without restating their routing.
 
 ## Flow
 

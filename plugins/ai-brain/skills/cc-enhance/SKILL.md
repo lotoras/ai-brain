@@ -66,10 +66,8 @@ If the user's raw prompt contains one of those explicit directives, the enhanced
 with exactly this instruction (consume the trigger words; do not repeat them as task content):
 
 > Run this as a Codex pipeline: Codex writes the red tests via the `codex:codex-rescue` agent →
-> Sonnet coders implement (never editing tests) → verify (2 failed fix rounds → `/codex:rescue`) →
-> Codex review via `node "<plugin>/scripts/codex-companion.mjs" review --scope working-tree`
-> (`adversarial-review` if `src/auth/**`, `**/migrations/**`, or `**/billing/**` is touched)
-> through a Haiku relay → Sonnet fixes the findings → Opus `/simplify` last.
+> Sonnet coders implement (never editing tests) → verify (2 failed fix rounds → `/codex:rescue`) → done.
+> No automatic review or simplify — leave both to the Stop hook.
 
 Without a trigger, add nothing — planned work runs the default all-Claude pipeline, no Codex.
 If both the Fable and Codex triggers are present, append both blocks (Fable first).

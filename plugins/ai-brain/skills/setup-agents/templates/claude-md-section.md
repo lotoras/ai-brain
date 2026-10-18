@@ -14,7 +14,7 @@ fable") and the session is NOT on Fable 5, dispatch them with `model: "fable"` (
 override beats the frontmatter default); in Fable 5 sessions architects always stay Opus — the
 orchestrator's plan review is the Fable pass, never double-pay. Architect effort ladder: `high` by default, `xhigh`
 for hard/cross-cutting designs, then Fable via the explicit upgrade. Test planners ({{TEST_PLANNER_NAMES}}) are
-always **Opus** and, with the testing coders, own test infrastructure and, via `testing-coder`, write the first failing tests for planned work (only when the user says "use codex" does **Codex write the first failing tests** via `codex:codex-rescue` and review afterward); coders keep `model: opus` in frontmatter but plan-driven / well-specified coding, test
+always **Opus** and, with the testing coders, own test infrastructure and, via `testing-coder`, write the first failing tests for planned work (only when the user says "use codex" does **Codex write the first failing tests** via `codex:codex-rescue`); coders keep `model: opus` in frontmatter but plan-driven / well-specified coding, test
 writing are dispatched with `model: "sonnet"` (**Sonnet**, effort medium), while purely mechanical, exactly-specified edits (verbatim find/replace, ID swaps, template copy/sync) are dispatched with `model: "haiku"` (**Haiku**), escalating to Sonnet on failed verification — agent frontmatter can't set effort; the effort values apply to workflow `agent()` stages — plain `Agent` dispatches run at the session effort); escalate to **Opus** for
 cross-cutting, security, auth/billing or migration work, no written plan, a single dependent chain, or
 a Sonnet coder that returned blocked / failed verification (a stuck Sonnet coder returns `Open
@@ -24,8 +24,8 @@ effort only if Haiku is unavailable or its sweep comes back thin; Haiku effort: 
 effort. Route each role to the cheapest tier that holds quality: sweep effort before switching model; cheaper workers pay off for well-specified or parallel work, not for a single dependent chain. **Fable 5 sessions** are strict orchestrators — no direct
 `Edit`/`Write`, ever, except its own plan file (`*.md` under `.claude/plans/`). **Opus sessions**
 plan in the main thread; the direct-edit exception (any single-file change, or a small sequential
-change whose context the main thread already holds) applies only to Opus, never Fable. The after-task simplify/review pass
-is handled by the global threebrain Stop hook — its routing lives there, not here.
+change whose context the main thread already holds) applies only to Opus, never Fable. Simplify and Review are never automatic
+pipeline phases — the global threebrain Stop hook offers them after a code change and its routing lives there, not here.
 
 Multi-layer changes dispatch multiple coders **in parallel** (single message, multiple `Agent` tool
 calls). See `.claude/rules/workflow.md` → "Session-model discipline" for the full reading rule.
@@ -46,4 +46,5 @@ implementation → the named coder (Opus), planning/judging → the architect (O
 Plans and large findings travel as files (`.claude/plans/`, `.claude/findings/`), not inline text.
 Per task: detect session model → map delegates → brief per contract → dispatch → verify. Full
 procedure: `.claude/rules/workflow.md` → How to proceed. Planned work: `testing-coder` tests → Sonnet
-code → Opus simplify last; only when the user says "use codex" does Codex write the tests and review.
+code → verify (Codex writes the tests only when the user says "use codex"); Simplify and Review run only
+when the user picks them in the threebrain Stop hook.
