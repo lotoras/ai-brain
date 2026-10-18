@@ -18,7 +18,7 @@
     {
       "name": "ai-brain",
       "description": "Personal toolbox: generate images/videos via browser ChatGPT, recolor icons to the UPD brand gradient, route review/analysis to Codex/ChatGPT, enhance prompts, provision the architect/coder/testing agent lineup into any project.",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "author": { "name": "lotoras" },
       "source": "./plugins/ai-brain",
       "category": "productivity",
