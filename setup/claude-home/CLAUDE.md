@@ -90,7 +90,7 @@ After finishing any task that **changed code**, the `threebrain-after-task` Stop
 whether to run a threebrain pass — **Simplify** (`/simplify`) · **Review** (`/codex:review`) ·
 **Review + Simplify** (Review → fix → Simplify last) · **No**. Review auto-switches to
 `/codex:adversarial-review` when `src/auth/**`, `**/migrations/**`, or `**/billing/**` were touched.
-The hook also detects edits made by subagents and `codex:codex-rescue` dispatches. Let the hook be
+The hook also detects edits made by subagents and `codex:codex-rescue` dispatches. The Review handoff runs the plugin's `codex-companion.mjs` script (the slash command is user-only), and the hook stays silent until pending background agents finish. Let the hook be
 the single ask: do **not** also offer a threebrain pass in prose yourself. Stay silent on read-only
 / Q&A tasks (the hook stays silent there too). Models for the pass: **Simplify** runs on **Opus**
 (dispatch a `model: "opus"` subagent if the session isn't on Opus); **Review** is done by **Codex**,

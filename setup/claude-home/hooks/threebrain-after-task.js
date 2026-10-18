@@ -15,7 +15,7 @@
  *
  * Sensitive paths: the file_path / notebook_path of every mutating tool_use is
  * collected. If any matches src/auth/, /migrations/ or /billing/ (also at the path
- * start; `\` normalised to `/`), the Review option becomes /codex:adversarial-review.
+ * start; `\` normalised to `/`), the Review option becomes the adversarial review.
  *
  * Delegated edits: subagent turns are NOT in the main transcript. They live in
  *   <dir of transcript_path>/<transcript basename without .jsonl>/subagents/agent-<agentId>.jsonl
@@ -32,6 +32,17 @@
  * Separately, an assistant `Agent` tool_use with subagent_type "codex:codex-rescue"
  * counts as changed code: Codex writes through Bash, which tool scanning can't see.
  *
+ * Pending background agents: an async Agent launch (`toolUseResult.isAsync === true`) with
+ * no later `<task-notification>` (or a SendMessage resume after the last notification) means
+ * work is still running between pipeline phases -> stay silent; the ask fires once all of them
+ * have reported (see below). If a notification's launch is in an earlier turn, the walk crosses
+ * typed-turn boundaries until it finds that launch (so turn-1 edits aren't lost) — unless the
+ * hook's own prior reason is met on the way (already asked).
+ *
+ * Review invocation: /codex:review and /codex:adversarial-review are user-only slash
+ * commands (disable-model-invocation), so the reason names the command a Haiku relay can
+ * actually run: `node "<plugin>/scripts/codex-companion.mjs" review --scope working-tree`.
+ *
  * Wired in ~/.claude/settings.json:
  *   "hooks": { "Stop": [ { "hooks": [
  *     { "type": "command", "command": "node ~/.claude/hooks/threebrain-after-task.js" }
@@ -47,6 +58,7 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const MARKER = 'THREEBRAIN_AFTER_TASK';
@@ -126,9 +138,39 @@ function scanSubagent(tpath, agentId, since, paths) {
   return found;
 }
 
+// Numeric dotted compare of two version-ish names (1.0.10 > 1.0.6). A non-numeric
+// segment counts as -1, so a name like "latest" or "tmp" sorts below any real version.
+function cmpVersion(a, b) {
+  const pa = a.split('.'), pb = b.split('.');
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = /^\d+$/.test(pa[i] || '') ? parseInt(pa[i], 10) : -1;
+    const y = /^\d+$/.test(pb[i] || '') ? parseInt(pb[i], 10) : -1;
+    if (x !== y) return x - y;
+  }
+  return 0;
+}
+
+// Absolute path (forward slashes) of the newest installed codex plugin's companion
+// script, or null if it can't be found. The plugin cache holds one dir per version.
+function resolveCompanion() {
+  try {
+    const base = path.join(os.homedir(), '.claude', 'plugins', 'cache', 'openai-codex', 'codex');
+    const versions = fs.readdirSync(base).filter(function (v) {
+      return fs.existsSync(path.join(base, v, 'scripts', 'codex-companion.mjs'));
+    }).sort(cmpVersion);
+    if (!versions.length) return null;
+    return path.join(base, versions[versions.length - 1], 'scripts', 'codex-companion.mjs')
+      .replace(/\\/g, '/');
+  } catch (_) { return null; }
+}
+
 function ask(sensitive) {
-  const reviewCmd = sensitive ? '/codex:adversarial-review' : '/codex:review';
-  const reviewHandoff = 'by delegating the handoff to a subagent with model "haiku" — Haiku only triggers the Codex review and relays its output word-for-word, never summarising or reviewing the code itself';
+  const sub = sensitive ? 'adversarial-review' : 'review';
+  const companion = resolveCompanion();
+  const reviewCmd = companion
+    ? 'node "' + companion + '" ' + sub + ' --scope working-tree'
+    : "the installed codex@openai-codex plugin's scripts/codex-companion.mjs with \"" + sub + " --scope working-tree\"";
+  const reviewHandoff = 'by delegating to a subagent with model "haiku" that runs exactly that one Bash command and relays its stdout word-for-word, never summarising or reviewing the code itself (/codex:' + sub + ' is a user-only slash command, so the relay must run the command, not the slash command)';
   const simplifyPass = 'run /simplify on the code you just changed as an Opus pass (if the session model is not Opus, dispatch the pass to a subagent with model "opus")';
   const reason = [
     MARKER + ': This task changed code. Before you finish, do NOT stop yet —',
@@ -174,6 +216,13 @@ const changedPaths = [];       // file_path / notebook_path of every mutating to
 const agentIds = new Set();    // subagents whose own transcripts must be scanned
 let boundaryTs = NaN;          // ms epoch of the typed user turn that ends the window
 let blindSpot = false;         // lookback was cut short by an unparseable line
+// Background-agent bookkeeping. The walk goes backwards, so the FIRST event seen for an id is
+// its latest in time: that decides pending vs finished (an old notification must not mark a
+// resumed run done).
+const latest = new Map();      // id -> 'pending' (latest event = dispatch) | 'done' (= notification)
+const asyncSeen = new Set();   // ids launched async (toolUseResult.isAsync)
+const notified = new Set();    // ids with a <task-notification> in the walked range
+const dispatched = new Set();  // ids whose launch/resume (Agent result or SendMessage) was seen
 
 for (let i = lines.length - 1; i >= 0; i--) {
   const line = lines[i];
@@ -193,7 +242,14 @@ for (let i = lines.length - 1; i >= 0; i--) {
 
   // Agent tool_result: the user record carries the spawned agent's id.
   const tur = msg && msg.toolUseResult;
-  if (tur && typeof tur.agentId === 'string') agentIds.add(tur.agentId);
+  if (tur && typeof tur.agentId === 'string') {
+    agentIds.add(tur.agentId);
+    dispatched.add(tur.agentId);
+    if (tur.isAsync === true) {
+      asyncSeen.add(tur.agentId);
+      if (!latest.has(tur.agentId)) latest.set(tur.agentId, 'pending');
+    }
+  }
 
   // Confirm a file-mutating tool call in an assistant turn; note delegations.
   if (msg.type === 'assistant' && Array.isArray(content)) {
@@ -208,6 +264,8 @@ for (let i = lines.length - 1; i >= 0; i--) {
       } else if (part.name === 'SendMessage' && part.input
           && typeof part.input.to === 'string') {
         agentIds.add(part.input.to);
+        dispatched.add(part.input.to);
+        if (!latest.has(part.input.to)) latest.set(part.input.to, 'pending'); // resumed run
       }
     }
   }
@@ -218,7 +276,12 @@ for (let i = lines.length - 1; i >= 0; i--) {
     if (text.indexOf('<task-notification>') !== -1) {
       const re = /<task-id>([^<]+)<\/task-id>/g;
       let m;
-      while ((m = re.exec(text)) !== null) agentIds.add(m[1].trim());
+      while ((m = re.exec(text)) !== null) {
+        const id = m[1].trim();
+        agentIds.add(id);
+        notified.add(id);
+        if (!latest.has(id)) latest.set(id, 'done');
+      }
       continue;
     }
     // A genuine typed user turn ends the lookback at the current turn boundary.
@@ -226,9 +289,27 @@ for (let i = lines.length - 1; i >= 0; i--) {
     // with an attachment) — but NOT an array of only tool_result blocks.
     const typedTurn = typeof content === 'string'
       || (Array.isArray(content) && content.some(function (p) { return p && p.type === 'text'; }));
-    if (typedTurn) { boundaryTs = Date.parse(msg.timestamp); break; }
+    if (typedTurn) {
+      // A notification whose launch we haven't seen means the agent was started in an earlier
+      // turn (its Edit may live there, and that turn's Stop deferred): cross this boundary and
+      // keep walking until every such launch is found. Guard 2 still applies on the way, and
+      // boundaryTs only takes the typed turn where the walk finally ends.
+      if (Array.from(notified).some(function (id) { return !dispatched.has(id); })) continue;
+      boundaryTs = Date.parse(msg.timestamp);
+      break;
+    }
   }
 }
+
+// Background agents still running (latest event is an async launch or a SendMessage resume, no
+// later notification): defer. A SendMessage target only counts if it is a known background agent
+// (async launch or notification seen), so messaging a teammate can't silence the hook forever.
+// The completion notification starts a new turn, and the next Stop re-evaluates the same
+// window (the edits are still there, no hook reason was planted), so the ask fires once
+// the work is actually done instead of between pipeline phases.
+if (Array.from(latest).some(function (e) {
+  return e[1] === 'pending' && (asyncSeen.has(e[0]) || notified.has(e[0]));
+})) stop();
 
 // Subagent edits live in their own files. Skip when the window is unreliable
 // (blind spot) — without a boundary we'd count stale edits from earlier turns.

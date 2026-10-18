@@ -8,6 +8,7 @@ description: Use whenever the user's request matches a Three Model Brain trigger
 You are Claude in a workspace where delegate models are wired in:
 
 - **Codex (`gpt-6.1-sol`)** via the `codex@openai-codex` plugin — slash commands `/codex:review`, `/codex:adversarial-review`, `/codex:rescue`, `/codex:status`, `/codex:result`, `/codex:cancel`, `/codex:setup`. The model is pinned globally in `~/.codex/config.toml` (`model = "gpt-6.1-sol"`, `model_reasoning_effort = "high"`; `setup` provisions the pin from `setup/codex-home/config.toml`); the plugin sends `model: null`, so every Codex call — tests, review, adversarial, rescue — inherits it. Never pass the plugin's `spark` alias — it maps to the stale `gpt-5.3-codex-spark`.
+  **Invoking Codex from Claude:** `review`, `adversarial-review`, `status`, `result`, `cancel`, `transfer` are user-only slash commands (`disable-model-invocation`) — Claude cannot fire them. From Claude run `node "<plugin>/scripts/codex-companion.mjs" <review|adversarial-review> --scope working-tree` (plugin = `~/.claude/plugins/cache/openai-codex/codex/<version>`) through a Haiku relay that returns stdout verbatim. Rescue and test-writing go through the `codex:codex-rescue` agent.
 - **ChatGPT (in-browser)** — reached through the **claude-in-chrome** MCP at `chatgpt.com` (open a tab, type or upload the request, read the result back). One job: **multimodal perception Claude lacks** — understanding **video, audio, or a YouTube URL** by uploading the file (claude-in-chrome `file_upload`) or pasting the link, then asking. Do **not** use it for code analysis, file review, or large-context *text* work — that stays with Claude (1M context). Creative concepts and inventive website components are Claude's own job — no delegate.
 - **media-gen** (sibling skill) — drives the browser (ChatGPT) to *generate* finished image, icon, and video **assets**. A generation surface, not a reasoning delegate.
 
@@ -17,8 +18,8 @@ Your job: detect the trigger, fire the right delegate, return its output. Do not
 
 | Trigger in the user's message | Action |
 |---|---|
-| "check over your work", "review this", "double-check what you just did" | Run `/codex:review` |
-| "tear this apart", "challenge this", "adversarial review", "find what's wrong" | Run `/codex:adversarial-review` (optionally with a focus phrase) |
+| "check over your work", "review this", "double-check what you just did" | Codex review (see "Invoking Codex from Claude") |
+| "tear this apart", "challenge this", "adversarial review", "find what's wrong" | Codex adversarial review (see "Invoking Codex from Claude"; optionally with a focus phrase) |
 | "I'm stuck", "you've tried N times" (N≥3), "rescue this", "investigate why" | Run `/codex:rescue <user's framing>` |
 | "watch this clip / video", "what happens in this video", + a video file or YouTube URL | Upload the video (claude-in-chrome `file_upload`) or paste the URL into **ChatGPT in-browser**, ask, read the answer back |
 | "transcribe / analyze this audio", + an audio file | Upload the audio to **ChatGPT in-browser** and ask |
@@ -30,7 +31,7 @@ Your job: detect the trigger, fire the right delegate, return its output. Do not
 
 ## Hard rules
 
-1. **Forced adversarial review on sensitive paths.** Any time you write/edit a file under `src/auth/**`, `**/migrations/**`, or `**/billing/**`, you MUST run `/codex:adversarial-review` after the edit and surface its findings before saying the task is done. No exceptions, even if the user didn't ask.
+1. **Forced adversarial review on sensitive paths.** Any time you write/edit a file under `src/auth/**`, `**/migrations/**`, or `**/billing/**`, you MUST run the Codex adversarial review (see "Invoking Codex from Claude") after the edit and surface its findings before saying the task is done. No exceptions, even if the user didn't ask.
 2. **Pass user phrasing through.** When firing `/codex:rescue` or driving ChatGPT in-browser, include the user's own framing as the argument — don't paraphrase.
 3. **ChatGPT is in-browser only.** Reach ChatGPT through the **claude-in-chrome** MCP (`chatgpt.com`), never an API key. Use it for multimodal perception Claude can't do natively (**video / audio / YouTube** — upload the file or paste the link). Creative concepts and inventive components stay with Claude. Code analysis, large-context text scans, and file review stay with Claude/Codex.
 4. **One delegate per task — but sequential Codex handoffs are allowed.** Don't run Codex and ChatGPT in *parallel* on the same request unless the user explicitly asks for both opinions. A *sequential* cross-model check is different and encouraged: for planned work Codex gets **two** touchpoints — tests before implementation, review after (Codex writes tests → Claude implements → Codex critiques) — the intended decorrelated checks, not a violation. The review fires **only on a trigger** — a review phrase, the sensitive-path rule (#1), or the `threebrain-after-task` Stop-hook choice — never automatically on every diff; the tests touchpoint belongs to the planned-work pipeline below.

@@ -5,6 +5,8 @@
  * Each case writes a transcript (and optionally a sibling <name>/subagents/agent-X.jsonl)
  * to a temp dir, pipes Stop-hook JSON to the hook, and checks block vs silent.
  * Silent = exit 0 and empty stdout.
+ * Every hook run gets HOME/USERPROFILE pointed at a per-test temp dir (os.homedir() reads
+ * USERPROFILE on Windows, HOME elsewhere) so the codex plugin lookup never sees the real machine.
  */
 
 const assert = require('node:assert');
@@ -50,9 +52,29 @@ function fixture(records, subagents) {
   return tp;
 }
 
-function run(tp, extra) {
+function asyncLaunch(agentId, t) {
+  return {
+    type: 'user', timestamp: ts(t), toolUseResult: { isAsync: true, agentId: agentId, status: 'async_launched' },
+    message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu', content: 'launched' }] }
+  };
+}
+
+// A fresh empty fake home per call; `plugins` = version dir names that get a companion script.
+function fakeHome(plugins) {
+  const home = fs.mkdtempSync(path.join(ROOT, 'home-'));
+  (plugins || []).forEach(function (v) {
+    const sd = path.join(home, '.claude', 'plugins', 'cache', 'openai-codex', 'codex', v, 'scripts');
+    fs.mkdirSync(sd, { recursive: true });
+    fs.writeFileSync(path.join(sd, 'codex-companion.mjs'), '// fake\n');
+  });
+  return home;
+}
+
+function run(tp, extra, home) {
+  const h = home || fakeHome();
   const r = spawnSync(process.execPath, [HOOK], {
-    input: JSON.stringify(Object.assign({ transcript_path: tp }, extra || {})), encoding: 'utf8'
+    input: JSON.stringify(Object.assign({ transcript_path: tp }, extra || {})), encoding: 'utf8',
+    env: Object.assign({}, process.env, { HOME: h, USERPROFILE: h })
   });
   assert.strictEqual(r.status, 0, 'hook must exit 0: ' + r.stderr);
   return r.stdout;
@@ -71,21 +93,21 @@ function test(name, fn) { cases.push([name, fn]); }
 test('(a) Edit on src/foo.js -> block, plain review', function () {
   const reason = expectBlock(run(fixture([typed('fix it', 0), tool('Edit', { file_path: 'C:\\app\\src\\foo.js' }, 1)])));
   assert.ok(reason.includes('Review + Simplify'));
-  assert.ok(reason.includes('/codex:review'));
+  assert.ok(reason.includes('review --scope working-tree'));
   assert.ok(!reason.includes('adversarial'));
   assert.ok(!reason.includes('"Both"'));
 });
 
 test('(b) Edit on src/auth/Hasher.php -> adversarial review', function () {
   const reason = expectBlock(run(fixture([typed('fix it', 0), tool('Edit', { file_path: '/app/src/auth/Hasher.php' }, 1)])));
-  assert.ok(reason.includes('/codex:adversarial-review'));
+  assert.ok(reason.includes('adversarial-review --scope working-tree'));
   assert.ok(reason.includes('Review + Simplify'));
 });
 
 test('(b2) migrations / billing / path-start / Windows separators are sensitive; "authors" is not', function () {
   [['/app/db/migrations/001.sql'], ['billing\\Invoice.php'], ['src/auth/x.php'], ['C:\\app\\src\\auth\\x.php']].forEach(function (p) {
     const reason = expectBlock(run(fixture([typed('go', 0), tool('Write', { file_path: p[0] }, 1)])));
-    assert.ok(reason.includes('/codex:adversarial-review'), p[0]);
+    assert.ok(reason.includes('adversarial-review --scope working-tree'), p[0]);
   });
   const reason = expectBlock(run(fixture([typed('go', 0), tool('Write', { file_path: '/app/src/authors/x.js' }, 1)])));
   assert.ok(!reason.includes('adversarial'));
@@ -102,7 +124,7 @@ test('(c2) subagent writing under billing/ -> adversarial', function () {
   const tp = fixture(
     [typed('delegate', 0), tool('Agent', { subagent_type: 'general-purpose', prompt: 'x' }, 1), agentResult('abc123', 10)],
     { abc123: [tool('Write', { file_path: '/app/billing/Pay.php' }, 5)] });
-  assert.ok(expectBlock(run(tp)).includes('/codex:adversarial-review'));
+  assert.ok(expectBlock(run(tp)).includes('adversarial-review --scope working-tree'));
 });
 
 test('(d) subagent Write before the boundary -> silent', function () {
@@ -150,6 +172,74 @@ test('(i) task-notification is not a turn boundary; async agent edit counted', f
 test('(j) missing subagent file / missing transcript -> silent', function () {
   expectSilent(run(fixture([typed('delegate', 0), agentResult('ghost', 5)])));
   expectSilent(run(path.join(ROOT, 'nope.jsonl')));
+});
+
+const AGENT = { subagent_type: 'general-purpose', run_in_background: true, prompt: 'x' };
+
+test('(k) async launch with no notification yet -> silent (agents still running)', function () {
+  expectSilent(run(fixture([typed('go', 0), tool('Agent', AGENT, 1), asyncLaunch('bg1', 2), tool('Edit', { file_path: '/a.js' }, 3)])));
+});
+
+test('(l) async launch + its notification + subagent Write -> block', function () {
+  const tp = fixture(
+    [typed('go', 0), tool('Agent', AGENT, 1), asyncLaunch('bg1', 2), notification('bg1', 20)],
+    { bg1: [tool('Write', { file_path: '/app/src/foo.js' }, 10)] });
+  expectBlock(run(tp));
+});
+
+test('(m) two async launches, only one notified -> silent', function () {
+  const tp = fixture(
+    [typed('go', 0), tool('Agent', AGENT, 1), asyncLaunch('bg1', 2), asyncLaunch('bg2', 3),
+      tool('Edit', { file_path: '/a.js' }, 4), notification('bg1', 20)],
+    { bg1: [tool('Write', { file_path: '/b.js' }, 10)] });
+  expectSilent(run(tp));
+});
+
+test('(n) newest plugin version wins by numeric compare (1.0.10 > 1.0.6)', function () {
+  const home = fakeHome(['1.0.6', '1.0.10', 'latest']);
+  const reason = expectBlock(run(fixture([typed('fix', 0), tool('Edit', { file_path: '/a.js' }, 1)]), null, home));
+  assert.ok(reason.includes('/1.0.10/scripts/codex-companion.mjs'), reason);
+  assert.ok(!reason.includes('/1.0.6/'));
+  assert.ok(reason.includes('review --scope working-tree'));
+});
+
+test('(o) no plugin dir -> fallback wording, still the review args', function () {
+  const reason = expectBlock(run(fixture([typed('fix', 0), tool('Edit', { file_path: '/a.js' }, 1)])));
+  assert.ok(reason.includes('scripts/codex-companion.mjs'));
+  assert.ok(reason.includes("codex@openai-codex plugin's"));
+  assert.ok(reason.includes('review --scope working-tree'));
+  assert.ok(!reason.includes('node "'));
+});
+
+test('(p) Edit + async launch in turn 1, typed turn 2, notification in turn 2 -> block', function () {
+  expectBlock(run(fixture([
+    typed('go', 0), tool('Edit', { file_path: '/a.js' }, 1), tool('Agent', AGENT, 2), asyncLaunch('bg1', 3),
+    typed('another question', 10), notification('bg1', 20)])));
+});
+
+test('(q) same as (p) but the hook reason was already planted in turn 1 -> silent', function () {
+  const reasonText = 'THREEBRAIN_AFTER_TASK: This task changed code. Before you finish...';
+  expectSilent(run(fixture([
+    typed('go', 0), tool('Edit', { file_path: '/a.js' }, 1), tool('Agent', AGENT, 2), asyncLaunch('bg1', 3),
+    typed(reasonText, 4), typed('another question', 10), notification('bg1', 20)])));
+});
+
+test('(r) launch, notification, then SendMessage resume with no newer notification -> silent', function () {
+  expectSilent(run(fixture([
+    typed('go', 0), tool('Agent', AGENT, 1), asyncLaunch('bg1', 2), notification('bg1', 10),
+    tool('SendMessage', { to: 'bg1', message: 'more' }, 11), tool('Edit', { file_path: '/a.js' }, 12)])));
+});
+
+test('(s) launch, notification, resume, second notification -> block', function () {
+  expectBlock(run(fixture([
+    typed('go', 0), tool('Agent', AGENT, 1), asyncLaunch('bg1', 2), notification('bg1', 10),
+    tool('SendMessage', { to: 'bg1', message: 'more' }, 11), tool('Edit', { file_path: '/a.js' }, 12),
+    notification('bg1', 20)])));
+});
+
+test('(t) SendMessage to a non-agent target never defers', function () {
+  expectBlock(run(fixture([
+    typed('go', 0), tool('SendMessage', { to: 'team-lead', message: 'hi' }, 1), tool('Edit', { file_path: '/a.js' }, 2)])));
 });
 
 let failed = 0;
