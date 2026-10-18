@@ -54,14 +54,33 @@ with exactly this instruction (consume the trigger words; do not repeat them as 
 
 Without a trigger, add nothing — architects run on their Opus default.
 
-## Step 1.7 — Ultracode keyword (always)
+## Step 1.7 — Codex pipeline (opt-in)
+
+Trigger ONLY on explicit directives: "use codex", "with codex", "via codex", "run it through
+codex". Bare mentions of "codex" as subject matter (tasks ABOUT Codex — "tell me about codex",
+"fix the codex hook", "codex config") are NOT triggers — when in doubt, do NOT trigger.
+
+If the user's raw prompt contains one of those explicit directives, the enhanced **Task** must END
+with exactly this instruction (consume the trigger words; do not repeat them as task content):
+
+> Run this as a Codex pipeline: Codex writes the red tests via the `codex:codex-rescue` agent →
+> Sonnet coders implement (never editing tests) → verify (2 failed fix rounds → `/codex:rescue`) →
+> Codex review via `node "<plugin>/scripts/codex-companion.mjs" review --scope working-tree`
+> (`adversarial-review` if `src/auth/**`, `**/migrations/**`, or `**/billing/**` is touched)
+> through a Haiku relay → Sonnet fixes the findings → Opus `/simplify` last.
+
+Without a trigger, add nothing — planned work runs the default all-Claude pipeline, no Codex.
+If both the Fable and Codex triggers are present, append both blocks (Fable first).
+
+## Step 1.8 — Ultracode keyword (always)
 
 Every enhanced **Task** must end with the keyword directive `use ultracode` (as its final
 sentence, e.g. "Use ultracode."). This arms the Workflow tool's multi-agent opt-in in the
 receiving session — append it on every enhancement, regardless of task shape.
 
-Placement: if Step 1.6's Fable-upgrade instruction is triggered, put "Use ultracode." immediately
-BEFORE that block, so the Fable instruction still ends the Task exactly as Step 1.6 requires.
+Placement: if Step 1.6's Fable-upgrade and/or Step 1.7's Codex instruction is triggered, put "Use
+ultracode." immediately BEFORE the first such block, so the triggered block(s) still end the Task
+exactly as Steps 1.6 / 1.7 require.
 If the raw task already contains "ultracode", do not duplicate it — exactly one occurrence.
 
 ## Step 2 — Build the prompt

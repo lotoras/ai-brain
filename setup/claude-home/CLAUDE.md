@@ -34,13 +34,20 @@ for finished image/icon/video assets. Large-context text/code analysis stays wit
 context). One delegate per task; pass the
 user's phrasing through; serialize browser work.
 
-Planned work (multi-file feature/bugfix) splits phases between Claude and Codex: Haiku explores →
-Opus plans (`.claude/plans/<slug>.md` with acceptance criteria) → **Codex writes the failing tests**
-(`codex:codex-rescue`, tests only) → Sonnet coders make them pass (never editing the tests) → Claude
-verifies (2 failed fix rounds → `/codex:rescue`) → **Codex reviews** → Sonnet fixes findings →
-**Opus `/simplify` last**. Micro-edits skip the plan/test phases. Codex unavailable → `testing-coder`
-writes the tests and `superpowers:requesting-code-review` reviews. Codex (`gpt-6.1-sol`, pinned in
-`~/.codex/config.toml`) — never use the plugin's stale `spark` alias; keep its stop-review gate off.
+Planned work (multi-file feature/bugfix) runs all-Claude by default: Haiku explores → Opus plans
+(`.claude/plans/<slug>.md` with acceptance criteria) → `testing-coder` (Sonnet) writes the failing
+tests → Sonnet coders make them pass (never editing the tests) → Claude verifies → **Opus `/simplify`
+last**; review is not a pipeline phase (Stop-hook offer and review / sensitive-path triggers only).
+Micro-edits skip the plan/test phases.
+
+**Codex pipeline — opt-in only**, when the user explicitly says "use codex" ("with codex", "via
+codex", "run it through codex"; or cc-enhance carries it in). Bare mentions of Codex as subject
+matter are not triggers. Then: **Codex writes the failing tests** (`codex:codex-rescue`, tests only)
+→ Sonnet coders make them pass (never editing the tests) → Claude verifies (2 failed fix rounds →
+`/codex:rescue`) → **Codex reviews** → Sonnet fixes findings → **Opus `/simplify` last**. Codex
+unavailable → `testing-coder` writes the tests and `superpowers:requesting-code-review` reviews.
+Codex (`gpt-6.1-sol`, pinned in `~/.codex/config.toml`) — never use the plugin's stale `spark` alias;
+keep its stop-review gate off.
 
 Project agents follow a standard model policy: architects/planners default to **Opus** and are
 **Fable-upgradeable** in non-Fable sessions only — upgrade only when the task explicitly says to

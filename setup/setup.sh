@@ -83,8 +83,10 @@ else
   done
 fi
 # Free design MCP servers, user scope (idempotent: skipped when already registered)
-MCPS="shadcn|-- npx -y shadcn@latest mcp
-magicui|-- npx -y @magicuidesign/mcp@latest
+# Git Bash on Windows: Claude launches MCP servers outside Bash, so npx needs the cmd /c shim (as in setup.ps1)
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) WINCMD="cmd /c " ;; *) WINCMD="" ;; esac
+MCPS="shadcn|-- ${WINCMD}npx -y shadcn@latest mcp
+magicui|-- ${WINCMD}npx -y @magicuidesign/mcp@latest
 lottiefiles|--transport http https://mcp.lottiefiles.com/mcp"
 if [ $CHECK -eq 1 ]; then would "claude mcp add --scope user shadcn magicui lottiefiles (skipped if already registered)"
 else
@@ -92,7 +94,8 @@ else
   printf '%s\n' "$MCPS" | while IFS='|' read -r m args; do
     if printf '%s\n' "$REGISTERED" | grep -q "^$m:"; then ok "mcp $m already registered"; continue; fi
     # shellcheck disable=SC2086 # args is a word list on purpose
-    claude mcp add --scope user "$m" $args </dev/null && ok "mcp $m" || warn "mcp $m add failed - continuing"
+    # MSYS_NO_PATHCONV: keep Git Bash from rewriting "/c" into a path
+    MSYS_NO_PATHCONV=1 claude mcp add --scope user "$m" $args </dev/null && ok "mcp $m" || warn "mcp $m add failed - continuing"
   done
   cyan "lottiefiles: run /mcp in Claude Code and sign in once"
 fi
