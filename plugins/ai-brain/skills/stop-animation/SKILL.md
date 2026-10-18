@@ -281,8 +281,14 @@ the final static frame at 100vh height — no JavaScript animation fires.
   snippet.html   filled template, ready to embed
 ```
 
+If the project's CLAUDE.md names an asset folder or a preview server (e.g. claude-designs:
+`project/img/anim/<slug>/`, `http://localhost:4321/~/<page>`), use those instead of `./stop-animation/`
+and `python -m http.server`.
+
 ## Siblings
 
+- `animated-sections` — code-built motion: banners, text effects, scroll-driven UI; routes object
+  transformations here.
 - `media-gen` — all image and video generation (ChatGPT stills / OpenRouter reroute and video via
   `scripts/openrouter.py` / browser Veo fallback).
 - `recolor-icons` — background knockout for single icons (simpler, no video pipeline).

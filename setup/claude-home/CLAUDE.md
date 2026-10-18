@@ -11,6 +11,21 @@ recolor). Recolor only when asked — **solid** in the named color, **gradient**
 said; if the user says "recolor" with no color, **ask which**. Use the **recolor-icons** skill. For an
 icon system/library, advise tracing to SVG.
 
+## Design work (any project)
+Route design tasks to the matching skill (in claude-designs, `site-style` runs in its local mode):
+
+| Task | Skill |
+|---|---|
+| Base styling, palette, fonts, DESIGN.md | `ai-brain:site-style` |
+| New UI / page / section, aesthetic direction | `frontend-design` (`superpowers:brainstorming` first when the brief is vague) |
+| Animated banner / hero / section, text effects, scroll-driven UI | `animated-sections` (free component registries via shadcn / Magic UI MCP, ported to the project; Lottie via LottieFiles MCP) |
+| Object transformation on scroll / loop / hover (photoreal, physical) | `stop-animation` (video-based) |
+| Cinematic background video loop | `media-gen` video (OpenRouter) |
+| Images / logos / illustrations · icons · sprites · charts | `media-gen` · `media-gen` → `recolor-icons` · `pixel-art` · `dataviz` |
+| Verify | claude-in-chrome screenshots at 1440 and 390 + console |
+
+Rule of thumb: real things changing → video; typographic / geometric / abstract / UI → code. Video routes keep media-gen's cost gate. Creative concepts stay with Claude.
+
 ## Handoffs across models
 See the **threebrain** skill for the orchestration model: Codex for review / adversarial / rescue, ChatGPT (in-browser, via claude-in-chrome) for
 video/audio/YouTube perception Claude can't do natively (upload the file or paste the link);

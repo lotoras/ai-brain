@@ -1,6 +1,6 @@
 ---
 name: site-style
-description: Set the base styling for a new website or web project, or turn a vague design wish into one ready-to-paste prompt, both for claude.ai/design — briefly interviewing about color, style direction and fonts, deriving a hex palette plus a Google Fonts pairing, and overriding the generic AI look (too many sections, a title on everything, icon-and-text lists). Foundation mode writes a ./DESIGN.md file; prompt mode outputs one prompt block. Use when the user asks for "base styling", "site style", a "styling foundation for a new website / web project", "DESIGN.md", a "design system starter", a "design prompt", "prompt for claude design", "claude.ai/design", "make me a prompt to design X", or describes something they want designed without saying how it should look.
+description: Set the base styling for a new website or web project, or turn a vague design wish into one ready-to-paste prompt, for claude.ai/design or the local claude-designs toolkit — briefly interviewing about color, style direction and fonts, deriving a hex palette plus a Google Fonts pairing, and overriding the generic AI look (too many sections, a title on everything, icon-and-text lists). Foundation mode writes a DESIGN.md file; prompt mode outputs one prompt block. Use when the user asks for "base styling", "site style", a "styling foundation for a new website / web project", "DESIGN.md", a "design system starter", a "design prompt", "prompt for claude design", "claude.ai/design", "make me a prompt to design X", or describes something they want designed without saying how it should look.
 argument-hint: [what you want styled or designed — e.g. base styling for my studio site, or a landing page for my bakery]
 ---
 
@@ -22,6 +22,12 @@ Pick the mode:
 - **Foundation mode** — the request is about a whole site or project, or names base styling / a styling foundation / `DESIGN.md` / a design system starter. Output is the `./DESIGN.md` file.
 - **Prompt mode** — the request is one artifact (a landing page, a poster, a dashboard screen). Output is a palette preview plus one fenced prompt block, no file.
 - If unclear: a whole site means foundation, a single thing means prompt. Do not ask which mode.
+
+Detect **local mode** (the claude-designs toolkit, the local replacement for claude.ai/design, which closes 2026-12-14). It only changes the **target path** foundation mode writes to and what it prints last:
+
+- cwd has `design.json` (a `design/<slug>` branch) — write `project/DESIGN.md`.
+- cwd is the claude-designs toolkit on main (has `design-systems/` and `templates/`, no `design.json`) — write `design-systems/<slug>/DESIGN.md`, with `<slug>` a short kebab-case name derived from the purpose.
+- Neither — claude.ai mode: write `./DESIGN.md`.
 
 Never ask the user about something they already stated. If the input is already a detailed brief (concrete color, mood, and type all present), skip the interview entirely and only fill remaining gaps yourself.
 
@@ -147,13 +153,14 @@ No commentary of any kind after the code block — the block is the last thing y
 ### Foundation mode
 
 1. Read `templates/DESIGN.md` and `references/anti-defaults.md`.
-2. Check the current working directory for an existing `DESIGN.md`. If one exists, say in one or two lines what it is (its direction, primary color, last-modified date) and ask before overwriting. This confirmation is not an interview round. Stop if the user declines.
-3. Fill the template and write it to `./DESIGN.md`:
+2. Check the target path from Step 0 for an existing `DESIGN.md`. If one exists, say in one or two lines what it is (its direction, primary color, last-modified date) and ask before overwriting. This confirmation is not an interview round. Stop if the user declines.
+3. Fill the template and write it to the target path:
    - Replace every `<placeholder>`, in the YAML front matter and in the body. None may remain in the written file.
    - Keep the eight sections exactly once each, in the template's order: Overview, Colors, Typography, Layout, Elevation & Depth, Shapes, Components, Do's and Don'ts. Add no other sections.
    - Set the Layout limits from the numeric caps, in the column matching the Content volume answer (Medium when it wasn't asked).
    - Take shape, layout and elevation values from the chosen style direction's traits; fall back to the foundation defaults for anything the direction leaves open.
    - Keep the three priority-override rows in Do's and Don'ts as they are, and fill the three open rows with the secondary tells most likely for this site, each with its replacement.
+   - Fill the `motion` front-matter key (and the Motion line in Components): default `subtle`; `expressive` for Brutalist or Technical-mono direction, or a Playful mood; `none` only if the user asks for no motion.
    - The file obeys its own rules: no eyebrow labels, no icon or emoji bullets, short sections.
 4. Output exactly three parts in chat, in this order, and nothing else:
    1. The palette preview, same ≤10-line format as prompt mode.
@@ -162,9 +169,13 @@ No commentary of any kind after the code block — the block is the last thing y
       ```
       Use the attached DESIGN.md as the base styling for everything in this project. Treat its limits and its Do's and Don'ts as hard rules. Start with: <first page or screen to design>.
       ```
+      In local mode, the block is instead a local kickoff (no attachment, no claude.ai paste instruction):
+      ```
+      Use <path> as the base styling for everything in this project. Treat its limits and its Do's and Don'ts as hard rules. Start with: <first page or screen>.
+      ```
 
 No commentary of any kind after the code block — the block is the last thing you output.
 
 ### Tweaks (both modes)
 
-If the user then asks for a tweak (different mood, darker, another font, "make it bolder"), regenerate the output from the new input without re-running the interview: the palette preview plus the prompt block in prompt mode; the rewritten `./DESIGN.md`, the palette preview and the kickoff block in foundation mode (no overwrite confirmation for a file this skill just wrote). Only re-open the interview if the tweak genuinely can't be resolved from the moods and colors already established (e.g. the user names a brand-new purpose).
+If the user then asks for a tweak (different mood, darker, another font, "make it bolder"), regenerate the output from the new input without re-running the interview: the palette preview plus the prompt block in prompt mode; the rewritten `DESIGN.md` (same target path), the palette preview and the kickoff block in foundation mode (no overwrite confirmation for a file this skill just wrote). Only re-open the interview if the tweak genuinely can't be resolved from the moods and colors already established (e.g. the user names a brand-new purpose).

@@ -89,19 +89,37 @@ foreach($m in 'anthropics/claude-plugins-official','openai/codex-plugin-cc','lot
 
 # 4) Plugins -----------------------------------------------------------------
 Step "4/7 Plugins (user scope)"
-foreach($p in 'superpowers@ai-brain','frontend-design@claude-plugins-official','codex@openai-codex','ai-brain@ai-brain'){
+$plugins = 'superpowers@ai-brain','frontend-design@claude-plugins-official','codex@openai-codex','ai-brain@ai-brain'
+foreach($p in $plugins){
   if($Check){ Would "claude plugin install $p --scope user (+ enable)"; continue }
   claude plugin install $p --scope user
   claude plugin enable ($p.Split('@')[0]) 2>$null
   if($LASTEXITCODE -eq 0){ Ok "plugin $p" } else { Warn "plugin $p (already installed?)" }
 }
-# Keep the codex plugin current (non-fatal)
-if($Check){ Would "claude plugin marketplace update openai-codex; claude plugin update codex@openai-codex" }
+# Keep every marketplace and plugin current (non-fatal; installs otherwise stay on an old cached version)
+if($Check){ Would "claude plugin marketplace update; claude plugin update <each plugin>" }
 else {
-  claude plugin marketplace update openai-codex
-  if($LASTEXITCODE -ne 0){ Warn "marketplace update openai-codex failed ($LASTEXITCODE) - continuing" }
-  claude plugin update codex@openai-codex
-  if($LASTEXITCODE -eq 0){ Ok "codex plugin up to date" } else { Warn "codex plugin update returned $LASTEXITCODE - continuing" }
+  claude plugin marketplace update
+  if($LASTEXITCODE -ne 0){ Warn "marketplace update failed ($LASTEXITCODE) - continuing" }
+  foreach($p in $plugins){
+    claude plugin update $p
+    if($LASTEXITCODE -eq 0){ Ok "$p up to date" } else { Warn "$p update returned $LASTEXITCODE - continuing" }
+  }
+}
+# Free design MCP servers, user scope (idempotent: skipped when already registered)
+$mcps = @(
+  @{ name='shadcn';      args=@('--','cmd','/c','npx','-y','shadcn@latest','mcp') },
+  @{ name='magicui';     args=@('--','cmd','/c','npx','-y','@magicuidesign/mcp@latest') },
+  @{ name='lottiefiles'; args=@('--transport','http','https://mcp.lottiefiles.com/mcp'); hint='run /mcp in Claude Code and sign in to lottiefiles once' }
+)
+if($Check){ $mcps | ForEach-Object { Would "claude mcp add --scope user $($_.name) (skipped if already registered)" } }
+else {
+  $registered = (claude mcp list 2>$null) -join "`n"
+  foreach($m in $mcps){
+    if($registered -match "(?m)^$($m.name):"){ Ok "mcp $($m.name) already registered"; continue }
+    claude mcp add --scope user $m.name @($m.args)
+    if($LASTEXITCODE -eq 0){ Ok "mcp $($m.name)"; if($m.hint){ Info $m.hint } } else { Warn "mcp $($m.name) add returned $LASTEXITCODE - continuing" }
+  }
 }
 
 # 5) Config copy with backup -------------------------------------------------

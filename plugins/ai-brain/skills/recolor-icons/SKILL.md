@@ -1,6 +1,6 @@
 ---
 name: recolor-icons
-description: Recolor PNG icons and knock out white/near-white backgrounds. Solid (flat) color is the DEFAULT; gradient is opt-in. Use when the user wants an icon recolored to the UPD brand or any color, made transparent, or prepped from a generated/raster icon. Petrol #006b6e, mid-green #a8d680.
+description: Knock out white/near-white icon backgrounds and recolor PNG icons. Icons are delivered DARK on a transparent background by default (knock out the bg, no recolor); recolor only when asked — solid in the named color, gradient only if "gradient" is said; "recolor" with no color asks which. Use when the user wants an icon made transparent, recolored to the UPD brand or any color, or prepped from a generated/raster icon. Petrol #006b6e, mid-green #a8d680.
 ---
 
 # Recolor icons (transparent-bg + solid + gradient)
@@ -16,7 +16,7 @@ installed plugin, on this machine `C:\laragon\www\ai-brain\plugins\ai-brain`):
 python "C:\laragon\www\ai-brain\plugins\ai-brain\skills\recolor-icons\transparent-bg.py" <file-or-folder>
 #    -> <name>-transparent.png
 
-# 2. SOLID recolor (DEFAULT mode). Optional color; defaults to Petrol #006b6e
+# 2. SOLID recolor (the recolor mode when a color is named). Optional color; falls back to Petrol #006b6e
 python "...\recolor-icons\recolor-solid.py" <file-or-folder> [#hexcolor]
 #    -> <name>-solid.png
 
@@ -51,7 +51,7 @@ Apply this whenever an icon could be recolored (including the `media-gen` icon f
 4. **"recolor" with NO color and NO "gradient"** (just "recolor it") → **ASK which color**
    the user wants (offer: a flat color, or the UPD brand gradient). Do not guess.
 
-Solid is the default recolor mode; gradient only happens when the user says "gradient".
+No recolor happens unless asked. When it does, solid is the mode for a named color; gradient only happens when the user says "gradient".
 
 ## How the recolor works
 Each opaque pixel keeps its alpha (anti-aliasing preserved). Solid replaces RGB with one

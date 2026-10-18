@@ -49,6 +49,7 @@ spacing:
   gutter: "<multiple of base>"
   section-desktop: "<96–160px>"
   section-mobile: "<56–80px>"
+motion: "<none | subtle | expressive>"
 ---
 
 ## Overview
@@ -127,7 +128,7 @@ Lists: plain text rows, a table or a definition list, with no markers.
 
 Forms: <field border, focus state, label position>.
 
-Motion: <the one load sequence>. Everything else moves only in response to the user.
+Motion: <the one load sequence or one ambient hero/banner motion>. Everything else moves only in response to the user; scroll-driven motion counts as user-driven. The `motion` level in the front matter caps it: `none` is static only, `subtle` one effect with no loop faster than 6s, `expressive` one ambient effect plus scroll choreography.
 
 ## Do's and Don'ts
 

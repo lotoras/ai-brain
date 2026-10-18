@@ -31,7 +31,9 @@ video** — or clearly trends that direction — the enhanced **Task** must expl
 Code to **use the `media-gen` skill** (browser → ChatGPT, generating **one asset at
 a time**). For **icons**, the Task must also name the **`recolor-icons`** step and its default:
 deliver the icon **dark on transparent** unless a color is requested (solid if a color is named,
-gradient only if "gradient" is said; ask which color if "recolor" is said with none). For **pixel art / sprite / tileset** tasks, name the `pixel-art` skill instead. Bake this into
+gradient only if "gradient" is said; ask which color if "recolor" is said with none). For **pixel art / sprite / tileset** tasks, name the `pixel-art` skill instead. For **animated
+banner / hero / section** tasks, the Task names the `animated-sections` skill; for **object
+transformation / scroll stop-motion** tasks, it names `stop-animation`. Bake this into
 the prompt text — do not add commentary outside the single output block.
 
 ## Step 1.6 — Fable upgrade (model routing)

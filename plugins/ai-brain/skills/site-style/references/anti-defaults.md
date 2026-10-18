@@ -53,7 +53,7 @@ Fixed at every volume:
 - 1 accent colour, 2 typefaces, 2 radii, 1 shadow, 1 card style, 0 gradients.
 - 45–75 characters per line.
 - 0 decorative icons; functional UI icons only (menu, close, search, external link).
-- One orchestrated load animation; otherwise motion only in response to user action.
+- One orchestrated load animation or one ambient hero/banner motion per page; scroll-driven motion counts as user-driven; everything else only in response to user action.
 
 ## Foundation defaults
 

@@ -8,10 +8,12 @@ A single plugin, **`ai-brain`**, bundling these skills:
 
 | Skill | What it does |
 |---|---|
-| **media-gen** | Generate **images / icons / video** by driving ChatGPT in Chrome (via the `claude-in-chrome` MCP), then download and post-process. |
+| **media-gen** | Generate **images / icons** by driving ChatGPT in Chrome (via the `claude-in-chrome` MCP), then download and post-process; reroute to OpenRouter when a result isn't good enough. **Video** defaults to the OpenRouter API (browser Veo fallback). |
 | **pixel-art** | Generates pixel art in a reusable style. Opus-direct by default, ChatGPT on request; the style is saved as a `.md` for consistency. Also builds looping sprite animations (sprite sheet + frame data). |
-| **recolor-icons** | Knock out icon backgrounds and recolor PNGs — **solid by default** (any color), **gradient** on request (Petrol `#006b6e` → mid-green `#a8d680`); left dark if no color is asked. Pillow + NumPy. |
-| **site-style** | Base styling for claude.ai/design: a short interview, then a `./DESIGN.md` for a whole site or one ready-to-paste prompt for a single artifact. Overrides the generic AI look. |
+| **recolor-icons** | Knock out icon backgrounds and recolor PNGs — icons are delivered **dark on transparent by default**; recolor only on request: **solid** in the named color, **gradient** only if "gradient" is said (Petrol `#006b6e` → mid-green `#a8d680`); "recolor" with no color asks which. Pillow + NumPy. |
+| **site-style** | Base styling for claude.ai/design and the local claude-designs toolkit: a short interview, then a `DESIGN.md` for a whole site or one ready-to-paste prompt for a single artifact. Overrides the generic AI look. |
+| **animated-sections** | Animated banners, hero sections and scroll effects — code via free component registries, video via `stop-animation` / `media-gen`, Lottie for vector animation. |
+| **stop-animation** | Scroll-driven / looping / hover stop animation of an object transforming: 3 AI stills → video → frames → canvas snippet. |
 | **threebrain** | Auto-router: delegate test-writing (planned work, spec-first) / review / adversarial / rescue to **Codex** (`gpt-6.1-sol`), and video/audio/YouTube perception to **ChatGPT** (in-browser). Claude orchestrates and runs Simplify last. |
 | **cc-enhance** | Rewrite a raw prompt into a tight Role + Task block for Claude Code (Opus). Routes media/icon requests to `media-gen`. Always ends the Task with `use ultracode`. |
 | **setup-brain** | Provision a new device: install this whole plugin set + replicate config (`clauded` launcher, statusline, keybindings, global `CLAUDE.md`, `dream`) and guide the logins. |

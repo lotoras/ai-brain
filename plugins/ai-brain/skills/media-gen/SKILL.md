@@ -1,6 +1,6 @@
 ---
 name: media-gen
-description: Use when the user asks to create / generate / make / draw an image, picture, icon, logo, illustration, or a video — in ANY project. Drives ChatGPT in Chrome via the claude-in-chrome MCP (Veo as browser video fallback), generates the asset, downloads it, and post-processes. For icons it knocks out the background and (only if asked) recolors. Also generates via the OpenRouter API (`openrouter.py`) when the user reroutes a browser result, says "use OpenRouter", or wants video without a browser. Do NOT substitute stock/searched assets for a generation request.
+description: Use when the user asks to create / generate / make / draw an image, picture, icon, logo, illustration, or a video — in ANY project. Images and icons are generated in ChatGPT in Chrome via the claude-in-chrome MCP, downloaded and post-processed (OpenRouter reroute via `openrouter.py` when the user says the result isn't good enough or "use OpenRouter"). Video defaults to the OpenRouter API (`openrouter.py`, no browser), with browser Veo as fallback. For icons it knocks out the background and (only if asked) recolors. Do NOT substitute stock/searched assets for a generation request.
 ---
 
 # media-gen — generate images / icons / video via browser AI
@@ -16,7 +16,8 @@ browser AI to make it, download it, and hand back a usable file. Model: **ChatGP
 
 ## Model selection
 - **ChatGPT** (`https://chatgpt.com`) is the only browser model for images and icons.
-- **Video is the single exception:** Veo at `https://gemini.google.com/app` (see "Video branch").
+- **Video is the single exception:** it defaults to the OpenRouter API; browser Veo at
+  `https://gemini.google.com/app` is the fallback (see "Video branch").
 
 ## ⚠️ Sequential handoff — one asset at a time
 The browser MCP drives **one live tab**. Keep handoffs small so it isn't overwhelmed:

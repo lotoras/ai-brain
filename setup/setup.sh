@@ -67,17 +67,34 @@ done
 
 # 4) Plugins
 step "4/7 Plugins (user scope)"
-for p in superpowers@ai-brain frontend-design@claude-plugins-official codex@openai-codex ai-brain@ai-brain; do
+PLUGINS="superpowers@ai-brain frontend-design@claude-plugins-official codex@openai-codex ai-brain@ai-brain"
+for p in $PLUGINS; do
   if [ $CHECK -eq 1 ]; then would "claude plugin install $p --scope user (+ enable)"
   else
     claude plugin install "$p" --scope user && claude plugin enable "${p%@*}" >/dev/null 2>&1 && ok "plugin $p" || warn "plugin $p (already installed?)"
   fi
 done
-# Keep the codex plugin current (non-fatal)
-if [ $CHECK -eq 1 ]; then would "claude plugin marketplace update openai-codex; claude plugin update codex@openai-codex"
+# Keep every marketplace and plugin current (non-fatal; installs otherwise stay on an old cached version)
+if [ $CHECK -eq 1 ]; then would "claude plugin marketplace update; claude plugin update <each plugin>"
 else
-  claude plugin marketplace update openai-codex || warn "marketplace update openai-codex failed - continuing"
-  claude plugin update codex@openai-codex && ok "codex plugin up to date" || warn "codex plugin update failed - continuing"
+  claude plugin marketplace update || warn "marketplace update failed - continuing"
+  for p in $PLUGINS; do
+    claude plugin update "$p" && ok "$p up to date" || warn "$p update failed - continuing"
+  done
+fi
+# Free design MCP servers, user scope (idempotent: skipped when already registered)
+MCPS="shadcn|-- npx -y shadcn@latest mcp
+magicui|-- npx -y @magicuidesign/mcp@latest
+lottiefiles|--transport http https://mcp.lottiefiles.com/mcp"
+if [ $CHECK -eq 1 ]; then would "claude mcp add --scope user shadcn magicui lottiefiles (skipped if already registered)"
+else
+  REGISTERED="$(claude mcp list 2>/dev/null)"
+  printf '%s\n' "$MCPS" | while IFS='|' read -r m args; do
+    if printf '%s\n' "$REGISTERED" | grep -q "^$m:"; then ok "mcp $m already registered"; continue; fi
+    # shellcheck disable=SC2086 # args is a word list on purpose
+    claude mcp add --scope user "$m" $args </dev/null && ok "mcp $m" || warn "mcp $m add failed - continuing"
+  done
+  cyan "lottiefiles: run /mcp in Claude Code and sign in once"
 fi
 
 # 5) Config copy with backup
