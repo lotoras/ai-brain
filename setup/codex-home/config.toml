@@ -1,3 +1,6 @@
-# Codex pin - newest model (GPT-6.1 Sol); inherited by every codex plugin call (tests, review, adversarial, rescue)
-model = "gpt-6.1-sol"
+# Codex default (review + rescue): GPT-6 Astra @ high. Tests (red, "use codex" pipeline) override per call with gpt-6.1-sol @ medium.
+model = "gpt-6-astra"
 model_reasoning_effort = "high"
+forced_login_method = "chatgpt"                   # subscription only - never fall back to an API key
+project_doc_fallback_filenames = ["CLAUDE.md"]    # read the project's CLAUDE.md when AGENTS.md is missing
+sandbox_workspace_write.network_access = true     # allow npm/composer installs + networked tests in --write runs

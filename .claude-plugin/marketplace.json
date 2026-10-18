@@ -18,7 +18,7 @@
     {
       "name": "ai-brain",
       "description": "Personal toolbox: generate images/icons via browser ChatGPT and video via the OpenRouter API, knock out and recolor icons (dark by default; solid or gradient on request), route review/rescue to Codex and video/audio perception to ChatGPT, enhance prompts, provision the architect/coder/testing agent lineup into any project.",
-      "version": "0.9.2",
+      "version": "0.9.3",
       "author": { "name": "lotoras" },
       "source": "./plugins/ai-brain",
       "category": "productivity",

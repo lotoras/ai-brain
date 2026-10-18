@@ -46,15 +46,42 @@ done
 
 # Codex model pin: merge setup/codex-home/config.toml -> ~/.codex/config.toml (never overrides an existing model)
 CFG_SRC="$ROOT/codex-home/config.toml"; CFG_DST="$HOME/.codex/config.toml"
+# top-level keys also provisioned from the template (added when missing, never overridden); KEYRE = awk test "line starts with key $k then ="
+CFG_KEYS="forced_login_method project_doc_fallback_filenames sandbox_workspace_write.network_access sandbox_workspace_write.writable_roots"  # writable_roots is rendered per machine, not in the template
+KEYRE='{l=$0; sub(/^[[:space:]]+/,"",l)} index(l,k)==1 && substr(l,length(k)+1) ~ /^[[:space:]]*=/'
+cfg_has(){ awk -v k="$2" '/^[[:space:]]*\[/{exit} '"$KEYRE"'{f=1} END{exit !f}' "$1"; }  # key set in the top-level region
+cfg_skip(){  # key present, or network_access while a sandbox_workspace_write table/inline value would conflict with the dotted key
+  cfg_has "$1" "$2" && return 0
+  case "$2" in sandbox_workspace_write.*) cfg_has "$1" sandbox_workspace_write || grep -Eq '^[[:space:]]*\[[[:space:]]*sandbox_workspace_write[[:space:]]*(\.[^]]*)?\]' "$1";; *) return 1;; esac
+}
+cfg_bak(){ [ -n "${CFG_BAK:-}" ] || { CFG_BAK="$CFG_DST.bak-$(date +%Y%m%d-%H%M%S)"; cp "$CFG_DST" "$CFG_BAK"; }; }  # one backup per run
 if [ -f "$CFG_SRC" ]; then
-  if [ $CHECK -eq 1 ]; then would "merge codex-home/config.toml -> ~/.codex/config.toml (copy if missing; prepend if no top-level model; else leave)"
-  elif [ ! -f "$CFG_DST" ]; then
-    mkdir -p "$(dirname "$CFG_DST")"; cp "$CFG_SRC" "$CFG_DST"; ok "wrote ~/.codex/config.toml (model pin)"
-  elif awk '/^[[:space:]]*\[/{exit} /^[[:space:]]*model[[:space:]]*=/{f=1} END{exit !f}' "$CFG_DST"; then
-    warn "~/.codex/config.toml already sets a model - left as-is (template pin: $CFG_SRC)"
+  if [ $CHECK -eq 1 ]; then would "merge codex-home/config.toml -> ~/.codex/config.toml (copy if missing; prepend if no top-level model; add missing forced_login_method / project_doc_fallback_filenames / sandbox_workspace_write.network_access keys, never overriding)"
   else
-    cp "$CFG_DST" "$CFG_DST.bak-$(date +%Y%m%d-%H%M%S)"
-    { cat "$CFG_SRC"; printf '\n'; cat "$CFG_DST"; } > "$CFG_DST.tmp" && mv "$CFG_DST.tmp" "$CFG_DST" && ok "prepended model pin to ~/.codex/config.toml (backup kept alongside)"
+    if [ ! -f "$CFG_DST" ]; then
+      mkdir -p "$(dirname "$CFG_DST")"; cp "$CFG_SRC" "$CFG_DST"; CFG_BAK=-; ok "wrote ~/.codex/config.toml (model pin)"  # fresh file: nothing to back up
+    elif awk '/^[[:space:]]*\[/{exit} /^[[:space:]]*model[[:space:]]*=/{f=1} END{exit !f}' "$CFG_DST"; then
+      warn "~/.codex/config.toml already sets a model - left as-is (template pin: $CFG_SRC)"
+    else
+      cfg_bak; tpl=$(cat "$CFG_SRC")
+      for k in $CFG_KEYS; do cfg_skip "$CFG_DST" "$k" && tpl=$(printf '%s\n' "$tpl" | awk -v k="$k" "$KEYRE"'{next} 1'); done  # no duplicate keys
+      { printf '%s\n\n' "$tpl"; cat "$CFG_DST"; } > "$CFG_DST.tmp" && mv "$CFG_DST.tmp" "$CFG_DST" && ok "prepended model pin to ~/.codex/config.toml (backup kept alongside)"
+    fi
+    # add any missing top-level template key at the end of the top-level region (before the first table); never overrides
+    for k in $CFG_KEYS; do
+      cfg_has "$CFG_DST" "$k" && continue
+      cfg_skip "$CFG_DST" "$k" && { warn "~/.codex/config.toml has a [sandbox_workspace_write] table - add $k there yourself"; continue; }
+      case "$k" in  # npm/composer caches, so installs work in the sandbox
+        *.writable_roots) line="$k = [\"$HOME/.npm\", \"$HOME/.cache/composer\", \"$HOME/.composer\"]";;
+        *) line=$(awk -v k="$k" "$KEYRE"'{print; exit}' "$CFG_SRC" | tr -d '\r');;
+      esac; [ -n "$line" ] || continue
+      cfg_bak
+      INS="$line" awk '!d && /^[[:space:]]*\[/{print ENVIRON["INS"]; printf "%s", h; h=""; d=1}
+        !d && /^[[:space:]]*$/{h = h $0 "\n"; next}
+        !d && h != ""{printf "%s", h; h=""}
+        {print}
+        END{if(!d){printf "%s", h; print ENVIRON["INS"]}}' "$CFG_DST" > "$CFG_DST.tmp" && mv "$CFG_DST.tmp" "$CFG_DST" && ok "added $k to ~/.codex/config.toml"
+    done
   fi
 fi
 

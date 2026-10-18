@@ -7,7 +7,7 @@ description: Use whenever the user's request matches a Three Model Brain trigger
 
 You are Claude in a workspace where delegate models are wired in:
 
-- **Codex (`gpt-6.1-sol`)** via the `codex@openai-codex` plugin — slash commands `/codex:review`, `/codex:adversarial-review`, `/codex:rescue`, `/codex:status`, `/codex:result`, `/codex:cancel`, `/codex:setup`. The model is pinned globally in `~/.codex/config.toml` (`model = "gpt-6.1-sol"`, `model_reasoning_effort = "high"`; `setup` provisions the pin from `setup/codex-home/config.toml`); the plugin sends `model: null`, so every Codex call — tests, review, adversarial, rescue — inherits it. Never pass the plugin's `spark` alias — it maps to the stale `gpt-5.3-codex-spark`.
+- **Codex (`gpt-6-astra` @ high for review / adversarial / rescue; `gpt-6.1-sol` @ medium for tests)** via the `codex@openai-codex` plugin — slash commands `/codex:review`, `/codex:adversarial-review`, `/codex:rescue`, `/codex:status`, `/codex:result`, `/codex:cancel`, `/codex:setup`. The default is pinned globally in `~/.codex/config.toml` (`model = "gpt-6-astra"`, `model_reasoning_effort = "high"`; `setup` provisions it from `setup/codex-home/config.toml`); the plugin sends `model: null`, so review, adversarial and rescue inherit it. Test-writing overrides it per call with `--model gpt-6.1-sol --effort medium` (see the Codex pipeline). Never pass the plugin's `spark` alias — it maps to the stale `gpt-5.3-codex-spark`.
   **Invoking Codex from Claude:** `review`, `adversarial-review`, `status`, `result`, `cancel`, `transfer` are user-only slash commands (`disable-model-invocation`) — Claude cannot fire them. From Claude run `node "<plugin>/scripts/codex-companion.mjs" <review|adversarial-review> --scope working-tree` (plugin = `~/.claude/plugins/cache/openai-codex/codex/<version>`) through a Haiku relay that returns stdout verbatim. Rescue and test-writing go through the `codex:codex-rescue` agent.
 - **ChatGPT (in-browser)** — reached through the **claude-in-chrome** MCP at `chatgpt.com` (open a tab, type or upload the request, read the result back). One job: **multimodal perception Claude lacks** — understanding **video, audio, or a YouTube URL** by uploading the file (claude-in-chrome `file_upload`) or pasting the link, then asking. Do **not** use it for code analysis, file review, or large-context *text* work — that stays with Claude (1M context). Creative concepts and inventive website components are Claude's own job — no delegate.
 - **media-gen** (sibling skill) — drives the browser (ChatGPT) to *generate* finished image, icon, and video **assets**. A generation surface, not a reasoning delegate.
@@ -75,7 +75,7 @@ With the trigger, planned work (multi-file feature or bugfix) is identical excep
 |---|---|---|---|
 | 1 | Explore | Claude Haiku | `Explore`, `model: "haiku"` |
 | 2 | Plan | Claude Opus (main thread / architect; Fable-upgradeable) | `.claude/plans/<slug>.md` with acceptance criteria |
-| 3 | Tests (red) | Codex | dispatch the `codex:codex-rescue` agent with a test-writing brief: read the plan file, write failing tests only, no non-test source edits, return test files + test command + red output |
+| 3 | Tests (red) | Codex | dispatch `codex:codex-rescue` with `--model gpt-6.1-sol --effort medium` and a test-writing brief: read the plan file, write failing tests only, no non-test source edits, return test files + test command + red output |
 | 4 | Implement (green) | Claude Sonnet coders | `<domain>-coder` makes tests pass; if a test looks wrong it flags it, never edits it |
 | 5 | Verify | Claude orchestrator | run suite; 2 failed fix rounds → `/codex:rescue` |
 | — | After verify | Stop hook | offers Simplify · Review · Review + Simplify · No — nothing runs unless the user picks it |
@@ -88,8 +88,11 @@ With the trigger, planned work (multi-file feature or bugfix) is identical excep
 Codex test-writing brief (phase 3, opted-in pipeline only) — fill in and pass as the `codex:codex-rescue` prompt:
 
 ```
+--model gpt-6.1-sol --effort medium
 Objective: write FAILING tests only for the plan at .claude/plans/<slug>.md. Do not edit any non-test source file.
 Read the plan file first; derive tests from its acceptance criteria.
+Explore the repo as needed: existing tests, fixtures, helpers, test config and the project's CLAUDE.md conventions.
+Run the suite and iterate until the new tests fail for the right reason (missing behavior).
 Test framework / location / command: <framework> · <tests dir> · <test command>
 Constraints: follow existing test conventions; one test per acceptance criterion; tests must fail for the right reason (missing behavior), not on syntax or import errors.
 Return (≤200 words): test files created (paths), the test command, and the red output.

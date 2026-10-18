@@ -14,7 +14,7 @@ A single plugin, **`ai-brain`**, bundling these skills:
 | **site-style** | Base styling for claude.ai/design and the local claude-designs toolkit: a short interview, then a `DESIGN.md` for a whole site or one ready-to-paste prompt for a single artifact. Overrides the generic AI look. |
 | **animated-sections** | Animated banners, hero sections and scroll effects — code via free component registries, video via `stop-animation` / `media-gen`, Lottie for vector animation. |
 | **stop-animation** | Scroll-driven / looping / hover stop animation of an object transforming: 3 AI stills → video → frames → canvas snippet. |
-| **threebrain** | Auto-router: delegate review / adversarial / rescue to **Codex** (`gpt-6.1-sol`) — plus spec-first test-writing for planned work, opt-in via "use codex" — and video/audio/YouTube perception to **ChatGPT** (in-browser). Claude orchestrates; Simplify and Review run only when you pick them in the Stop hook. |
+| **threebrain** | Auto-router: delegate review / adversarial / rescue to **Codex** (Astra for review, 6.1 Sol for tests) — plus spec-first test-writing for planned work, opt-in via "use codex" — and video/audio/YouTube perception to **ChatGPT** (in-browser). Claude orchestrates; Simplify and Review run only when you pick them in the Stop hook. |
 | **cc-enhance** | Rewrite a raw prompt into a tight Role + Task block for Claude Code (Opus). Routes media/icon requests to `media-gen`. Always casts a senior/expert role (never junior). Ends the Task with `use ultracode` (Workflow + sub-agents) unless the task is really small. |
 | **setup-brain** | Provision a new device: install this whole plugin set + replicate config (`clauded` launcher, statusline, keybindings, global `CLAUDE.md`, `dream`) and guide the logins. |
 

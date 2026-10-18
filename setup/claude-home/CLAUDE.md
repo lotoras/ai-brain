@@ -48,8 +48,9 @@ matter are not triggers. Then: **Codex writes the failing tests** (`codex:codex-
 → Sonnet coders make them pass (never editing the tests) → Claude verifies (2 failed fix rounds →
 `/codex:rescue`) → done. No automatic Codex review and no automatic Simplify — the Stop hook's offer
 is the only trigger for both. Codex unavailable → `testing-coder` writes the tests.
-Codex (`gpt-6.1-sol`, pinned in `~/.codex/config.toml`) — never use the plugin's stale `spark` alias;
-keep its stop-review gate off.
+Codex (default `gpt-6-astra` @ high for review/rescue, pinned in `~/.codex/config.toml`; tests use
+`gpt-6.1-sol` @ medium per call) runs on the ChatGPT subscription only (forced) and reads the project's
+CLAUDE.md as its project doc — never use the plugin's stale `spark` alias; keep its stop-review gate off.
 
 Project agents follow a standard model policy: architects/planners default to **Opus** and are
 **Fable-upgradeable** in non-Fable sessions only — upgrade only when the task explicitly says to

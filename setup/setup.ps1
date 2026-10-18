@@ -57,14 +57,44 @@ $cfgDst = Join-Path $env:USERPROFILE '.codex/config.toml'
 $winSrc = Join-Path $root 'codex-home/config.windows.toml'
 # matches [windows], [ windows ], ["windows"], ['windows'] and any [windows.<sub>] table
 $winHdr = '(?m)^\s*\[\s*(?:windows|"windows"|''windows'')\s*(?:\.[^\]]*)?\]'
+# top-level keys also provisioned from the template (added when missing, never overridden)
+$extraKeys = 'forced_login_method','project_doc_fallback_filenames','sandbox_workspace_write.network_access','sandbox_workspace_write.writable_roots'   # writable_roots is rendered per machine, not in the template
+$sbHdr = '(?m)^\s*\[\s*sandbox_workspace_write\s*(?:\.[^\]]*)?\]'   # a [sandbox_workspace_write] table conflicts with the dotted key
+function HasTopKey($t,$k){
+  $top = ($t -split '(?m)^\s*\[', 2)[0]
+  if($k -like 'sandbox_workspace_write.*' -and $top -match '(?m)^\s*sandbox_workspace_write\s*='){ return $true }
+  $top -match ('(?m)^\s*' + [regex]::Escape($k) + '\s*=')
+}
 if(Test-Path $cfgSrc){
-  if($Check){ Would "merge codex-home/config.toml -> ~/.codex/config.toml (copy if missing; prepend if no top-level model; append config.windows.toml unless a [windows] table exists)" }
+  if($Check){ Would "merge codex-home/config.toml -> ~/.codex/config.toml (copy if missing; prepend if no top-level model; add missing forced_login_method / project_doc_fallback_filenames / sandbox_workspace_write.network_access keys, never overriding; append config.windows.toml unless a [windows] table exists)" }
   else {
     $orig = if(Test-Path $cfgDst){ [System.IO.File]::ReadAllText($cfgDst) } else { $null }
     $text = $orig
     if($null -eq $text){ $text = [System.IO.File]::ReadAllText($cfgSrc); Ok "wrote ~/.codex/config.toml (model pin)" }
     elseif(($text -split '(?m)^\s*\[', 2)[0] -match '(?m)^\s*model\s*='){ Warn "~/.codex/config.toml already sets a model - left as-is (template pin: $cfgSrc)" }
-    else { $text = [System.IO.File]::ReadAllText($cfgSrc).TrimEnd() + "`n`n" + $text; Ok "prepended model pin to ~/.codex/config.toml" }
+    else {
+      # drop template keys the existing file already sets (a duplicate top-level key is invalid TOML)
+      $tpl = [System.IO.File]::ReadAllText($cfgSrc)
+      foreach($k in $extraKeys){ if((HasTopKey $text $k) -or ($k -like 'sandbox_workspace_write.*' -and $text -match $sbHdr)){ $tpl = $tpl -replace ('(?m)^[ \t]*' + [regex]::Escape($k) + '[ \t]*=.*(\r?\n|$)'), '' } }
+      $text = $tpl.TrimEnd() + "`n`n" + $text; Ok "prepended model pin to ~/.codex/config.toml"
+    }
+
+    # Add any missing top-level template key at the end of the top-level region (before the first table); never overrides.
+    $tplText = [System.IO.File]::ReadAllText($cfgSrc)
+    foreach($k in $extraKeys){
+      if(HasTopKey $text $k){ continue }
+      if($k -like 'sandbox_workspace_write.*' -and $text -match $sbHdr){ Warn "~/.codex/config.toml has a [sandbox_workspace_write] table - add $k there yourself"; continue }
+      $line = if($k -like '*.writable_roots'){ if($env:LOCALAPPDATA){ "$k = ['$env:LOCALAPPDATA\npm-cache', '$env:LOCALAPPDATA\Composer']" } } # npm/composer caches, so installs work in the sandbox
+               else { [regex]::Match($tplText, '(?m)^[ \t]*' + [regex]::Escape($k) + '[ \t]*=.*$').Value.TrimEnd() }
+      if(-not $line){ continue }
+      $nl = if($text -match "`r`n"){ "`r`n" } else { "`n" }
+      $m = [regex]::Match($text, '(?m)^\s*\[')
+      $head = if($m.Success){ $text.Substring(0, $m.Index) } else { $text }
+      $tail = if($m.Success){ $text.Substring($m.Index) } else { '' }
+      if($head -and -not $head.EndsWith("`n")){ $head += $nl }
+      $text = $head + $line + $nl + $tail
+      Ok "added $k to ~/.codex/config.toml"
+    }
 
     if(Test-Path $winSrc){
       if($text -match $winHdr){ Ok "~/.codex/config.toml already has a [windows] table" }

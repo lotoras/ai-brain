@@ -27,9 +27,22 @@ the `setup-brain` skill runs the script and walks you through the logins.
 ## What the script does (idempotent, backs up existing config)
 1. **Preflight** — checks `node` / `npm` / `claude` are present (stops with guidance if not).
 2. **Global CLIs** — `npm i -g @openai/codex@latest` (always upgrades, even if installed), then
-   merges `setup/codex-home/config.toml` into `~/.codex/config.toml` to pin `model = "gpt-6.1-sol"`
-   + `model_reasoning_effort = "high"`: copied if missing, prepended if the file has no top-level
+   merges `setup/codex-home/config.toml` into `~/.codex/config.toml` to pin the default
+   `model = "gpt-6-astra"` + `model_reasoning_effort = "high"` (serves `/codex:review` and
+   `/codex:rescue`; the "use codex" test-writing step overrides it per call with
+   `--model gpt-6.1-sol --effort medium`): copied if missing, prepended if the file has no top-level
    `model =` line (backup kept alongside), left untouched with a notice if it already sets a model.
+   The same template also carries three top-level keys: `forced_login_method = "chatgpt"`
+   (subscription only, never an API-key fallback), `project_doc_fallback_filenames = ["CLAUDE.md"]`
+   (Codex reads the project's CLAUDE.md as its project doc when AGENTS.md is missing) and
+   `sandbox_workspace_write.network_access = true` (npm/composer installs and networked tests in
+   `--write` runs). A fourth, `sandbox_workspace_write.writable_roots`, is rendered per machine (not in
+   the template): the npm and Composer cache dirs (`%LOCALAPPDATA%\npm-cache`, `%LOCALAPPDATA%\Composer`
+   on Windows; `~/.npm`, `~/.cache/composer`, `~/.composer` on macOS/Linux), because npm fails with
+   EPERM when its cache sits outside the sandbox's writable roots. On an existing config, any of these
+   four keys that is missing is inserted at the end of the top-level region (before the first table);
+   an existing key is never overridden, and a `[sandbox_workspace_write]` table skips the two dotted
+   `sandbox_workspace_write.*` keys with a warning.
    On Windows (`setup.ps1`) it also appends `setup/codex-home/config.windows.toml`
    (`[windows] sandbox = "unelevated"`) unless a `[windows]` table exists — without it native
    Windows Codex silently downgrades `--write` to read-only, so `codex:codex-rescue` can't write
