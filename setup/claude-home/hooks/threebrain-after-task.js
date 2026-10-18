@@ -32,14 +32,18 @@
  * Separately, an assistant `Agent` tool_use with subagent_type "codex:codex-rescue"
  * counts as changed code: Codex writes through Bash, which tool scanning can't see.
  *
- * Pending background agents: an async Agent launch (`toolUseResult.isAsync === true`) with
- * no later `<task-notification>` (or a SendMessage resume after the last notification) means
- * work is still running between pipeline phases -> stay silent; the ask fires once all of them
- * have reported (see below). If a notification's launch is in an earlier turn, the walk crosses
- * typed-turn boundaries until it finds that launch (so turn-1 edits aren't lost) — unless the
- * hook's own prior reason is met on the way (already asked).
+ * Pending background agents: while any subagent is still running the hook stays silent,
+ * so it doesn't ask between pipeline phases. "Running" comes from the subagent meta files, not
+ * from the transcript: <session>/subagents/agent-<id>.meta.json has no `finished` key while the
+ * agent runs, gets `"finished": true` on completion, and loses it again when the agent is resumed
+ * via SendMessage (Bash background tasks have no meta file). That state is window-independent and
+ * resume-aware; an agent whose transcript hasn't been written for 30 min is treated as dead.
+ * Edits seen while agents are pending are remembered in <session>/threebrain-deferred.json
+ * ({ sensitive }) so they survive typed user turns in between — no cross-turn transcript
+ * walking. Once nothing is pending the next Stop asks (changed code OR a deferral file),
+ * deletes the file, and the hook's own reason (anti-loop guard 2) also deletes it.
  *
- * Review invocation: /codex:review and /codex:adversarial-review are user-only slash
+  * Review invocation: /codex:review and /codex:adversarial-review are user-only slash
  * commands (disable-model-invocation), so the reason names the command a Haiku relay can
  * actually run: `node "<plugin>/scripts/codex-companion.mjs" review --scope working-tree`.
  *
@@ -72,6 +76,8 @@ const MUTATING_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const SENSITIVE_PATH = /(^|\/)(src\/auth|migrations|billing)\//i;
 // Agent ids end up in a file name: accept only plain id characters (no path separators).
 const SAFE_AGENT_ID = /^[A-Za-z0-9_.-]+$/;
+// An unfinished agent whose transcript is older than this is presumed crashed/killed.
+const STALE_MS = 30 * 60 * 1000;
 
 function readStdin() {
   try { return fs.readFileSync(0, 'utf8'); } catch (_) { return ''; }
@@ -109,13 +115,61 @@ function collectPaths(part, paths) {
   });
 }
 
+// <dir of transcript>/<session>/subagents/<name>
+function subagentPath(tpath, name) {
+  return path.join(path.dirname(tpath), path.basename(tpath, '.jsonl'), 'subagents', name);
+}
+
+// True only for a real subagent: it has an agent-<id>.meta.json next to its transcript.
+// Background Bash tasks also emit <task-notification>/<task-id> but have no such file.
+function isAgent(tpath, id) {
+  try { return SAFE_AGENT_ID.test(id) && fs.existsSync(subagentPath(tpath, 'agent-' + id + '.meta.json')); }
+  catch (_) { return false; }
+}
+
+// True if any subagent of this session is still running: its meta has no `finished: true`
+// and its transcript was written within STALE_MS. Any error -> not pending (fail-silent).
+function pendingAgents(tpath) {
+  try {
+    const dir = subagentPath(tpath, '');
+    return fs.readdirSync(dir).some(function (f) {
+      const m = /^agent-(.+)\.meta\.json$/.exec(f);
+      if (!m) return false;
+      try {
+        const meta = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+        if (meta && meta.finished === true) return false;
+        return Date.now() - fs.statSync(path.join(dir, 'agent-' + m[1] + '.jsonl')).mtimeMs < STALE_MS;
+      } catch (_) { return false; }
+    });
+  } catch (_) { return false; }
+}
+
+// Session-scoped deferral file (see header). All three helpers are fail-silent.
+function deferredPath(tpath) {
+  return path.join(path.dirname(tpath), path.basename(tpath, '.jsonl'), 'threebrain-deferred.json');
+}
+function readDeferred(tpath) {   // null = no file; {} = file with unreadable content
+  let txt;
+  try { txt = fs.readFileSync(deferredPath(tpath), 'utf8'); } catch (_) { return null; }
+  try { return JSON.parse(txt) || {}; } catch (_) { return {}; }
+}
+function writeDeferred(tpath, sensitive) {
+  try {
+    const prev = readDeferred(tpath);
+    fs.mkdirSync(path.dirname(deferredPath(tpath)), { recursive: true });
+    fs.writeFileSync(deferredPath(tpath), JSON.stringify({ sensitive: !!(prev && prev.sensitive) || sensitive }));
+  } catch (_) { /* best effort */ }
+}
+function clearDeferred(tpath) {
+  try { fs.unlinkSync(deferredPath(tpath)); } catch (_) { /* none to delete */ }
+}
+
 // Read one subagent transcript and report its mutating tool_use at/after `since`
 // (ms epoch; NaN = no boundary, count all). Missing/unreadable file -> nothing.
 function scanSubagent(tpath, agentId, since, paths) {
   let found = false;
   try {
-    const file = path.join(path.dirname(tpath), path.basename(tpath, '.jsonl'),
-      'subagents', 'agent-' + agentId + '.jsonl');
+    const file = subagentPath(tpath, 'agent-' + agentId + '.jsonl');
     const lines = fs.readFileSync(file, 'utf8').split('\n');
     for (const line of lines) {
       if (!line || !line.trim()) continue;
@@ -216,13 +270,6 @@ const changedPaths = [];       // file_path / notebook_path of every mutating to
 const agentIds = new Set();    // subagents whose own transcripts must be scanned
 let boundaryTs = NaN;          // ms epoch of the typed user turn that ends the window
 let blindSpot = false;         // lookback was cut short by an unparseable line
-// Background-agent bookkeeping. The walk goes backwards, so the FIRST event seen for an id is
-// its latest in time: that decides pending vs finished (an old notification must not mark a
-// resumed run done).
-const latest = new Map();      // id -> 'pending' (latest event = dispatch) | 'done' (= notification)
-const asyncSeen = new Set();   // ids launched async (toolUseResult.isAsync)
-const notified = new Set();    // ids with a <task-notification> in the walked range
-const dispatched = new Set();  // ids whose launch/resume (Agent result or SendMessage) was seen
 
 for (let i = lines.length - 1; i >= 0; i--) {
   const line = lines[i];
@@ -238,18 +285,11 @@ for (let i = lines.length - 1; i >= 0; i--) {
 
   // Guard 2 (anti-loop): the hook's own prior reason is present since the last
   // user turn -> we already asked, don't ask again.
-  if (isHookReason(content)) stop();
+  if (isHookReason(content)) { clearDeferred(tp); stop(); }
 
   // Agent tool_result: the user record carries the spawned agent's id.
   const tur = msg && msg.toolUseResult;
-  if (tur && typeof tur.agentId === 'string') {
-    agentIds.add(tur.agentId);
-    dispatched.add(tur.agentId);
-    if (tur.isAsync === true) {
-      asyncSeen.add(tur.agentId);
-      if (!latest.has(tur.agentId)) latest.set(tur.agentId, 'pending');
-    }
-  }
+  if (tur && typeof tur.agentId === 'string') agentIds.add(tur.agentId);
 
   // Confirm a file-mutating tool call in an assistant turn; note delegations.
   if (msg.type === 'assistant' && Array.isArray(content)) {
@@ -264,8 +304,6 @@ for (let i = lines.length - 1; i >= 0; i--) {
       } else if (part.name === 'SendMessage' && part.input
           && typeof part.input.to === 'string') {
         agentIds.add(part.input.to);
-        dispatched.add(part.input.to);
-        if (!latest.has(part.input.to)) latest.set(part.input.to, 'pending'); // resumed run
       }
     }
   }
@@ -278,9 +316,7 @@ for (let i = lines.length - 1; i >= 0; i--) {
       let m;
       while ((m = re.exec(text)) !== null) {
         const id = m[1].trim();
-        agentIds.add(id);
-        notified.add(id);
-        if (!latest.has(id)) latest.set(id, 'done');
+        if (isAgent(tp, id)) agentIds.add(id); // not a background Bash task
       }
       continue;
     }
@@ -289,27 +325,9 @@ for (let i = lines.length - 1; i >= 0; i--) {
     // with an attachment) — but NOT an array of only tool_result blocks.
     const typedTurn = typeof content === 'string'
       || (Array.isArray(content) && content.some(function (p) { return p && p.type === 'text'; }));
-    if (typedTurn) {
-      // A notification whose launch we haven't seen means the agent was started in an earlier
-      // turn (its Edit may live there, and that turn's Stop deferred): cross this boundary and
-      // keep walking until every such launch is found. Guard 2 still applies on the way, and
-      // boundaryTs only takes the typed turn where the walk finally ends.
-      if (Array.from(notified).some(function (id) { return !dispatched.has(id); })) continue;
-      boundaryTs = Date.parse(msg.timestamp);
-      break;
-    }
+    if (typedTurn) { boundaryTs = Date.parse(msg.timestamp); break; }
   }
 }
-
-// Background agents still running (latest event is an async launch or a SendMessage resume, no
-// later notification): defer. A SendMessage target only counts if it is a known background agent
-// (async launch or notification seen), so messaging a teammate can't silence the hook forever.
-// The completion notification starts a new turn, and the next Stop re-evaluates the same
-// window (the edits are still there, no hook reason was planted), so the ask fires once
-// the work is actually done instead of between pipeline phases.
-if (Array.from(latest).some(function (e) {
-  return e[1] === 'pending' && (asyncSeen.has(e[0]) || notified.has(e[0]));
-})) stop();
 
 // Subagent edits live in their own files. Skip when the window is unreliable
 // (blind spot) — without a boundary we'd count stale edits from earlier turns.
@@ -320,5 +338,18 @@ if (!blindSpot) {
   });
 }
 
-if (changedCode) ask(changedPaths.some(function (p) { return SENSITIVE_PATH.test(p); }));
+// Pending subagents (from the meta files, not the transcript) -> defer: remember that this
+// window changed code (and whether it was sensitive) in the session's deferral file and stay
+// silent. A later Stop with nothing pending asks — even if its own window is read-only (e.g. the
+// completion-notification turn) — so edits survive user turns without any cross-turn walking.
+const sensitive = changedPaths.some(function (p) { return SENSITIVE_PATH.test(p); });
+if (pendingAgents(tp)) {
+  if (changedCode) writeDeferred(tp, sensitive);
+  stop();
+}
+const deferred = readDeferred(tp);
+if (changedCode || deferred) {
+  clearDeferred(tp);
+  ask(sensitive || !!(deferred && deferred.sensitive));
+}
 stop();
