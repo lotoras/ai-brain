@@ -26,11 +26,17 @@ the `setup-brain` skill runs the script and walks you through the logins.
 
 ## What the script does (idempotent, backs up existing config)
 1. **Preflight** — checks `node` / `npm` / `claude` are present (stops with guidance if not).
-2. **Global CLIs** — `npm i -g @openai/codex` (skips if already installed).
+2. **Global CLIs** — `npm i -g @openai/codex@latest` (always upgrades, even if installed), then
+   merges `setup/codex-home/config.toml` into `~/.codex/config.toml` to pin `model = "gpt-6.1-sol"`
+   + `model_reasoning_effort = "high"`: copied if missing, prepended if the file has no top-level
+   `model =` line (backup kept alongside), left untouched with a notice if it already sets a model.
+   Don't use the codex plugin's `spark` alias — it maps to the stale `gpt-5.3-codex-spark`.
 3. **Marketplaces** — adds `anthropics/claude-plugins-official`, `openai/codex-plugin-cc`,
    `lotoras/ai-brain`.
 4. **Plugins (user scope)** — installs + enables `superpowers@ai-brain`, `frontend-design`, `codex`,
-   `ai-brain`.
+   `ai-brain`. Then runs `claude plugin marketplace update openai-codex` and
+   `claude plugin update codex@openai-codex` (non-fatal) so the codex plugin stays current. Keep its
+   stop-review gate off (`/codex:setup --disable-review-gate`) — it duplicates the pipeline's Review phase.
 5. **Config → `~/.claude`** — backs up any existing files to `~/.claude/backup/<timestamp>/`, then
    writes `statusline-command.js`, `keybindings.json`, `CLAUDE.md`, `commands/dream.md`, and
    `hooks/threebrain-after-task.js`. `settings.json` is **merged** (not overwritten) via
@@ -43,7 +49,9 @@ the `setup-brain` skill runs the script and walks you through the logins.
 The snapshot installs a `Stop` hook (`~/.claude/hooks/threebrain-after-task.js`) that, **only when the
 task is confirmed to have changed code** (an `Edit`/`Write`/`MultiEdit`/`NotebookEdit` tool call since
 the last user turn), asks via a menu whether to run a threebrain pass over the changes:
-**Simplify** (`/simplify`) · **Review** (`/codex:review`) · **Both** · **No**. It's a strict
+**Simplify** (`/simplify`) · **Review** (`/codex:review`, auto-switching to `/codex:adversarial-review`
+on `src/auth/**`, `**/migrations/**`, `**/billing/**`) · **Review + Simplify** (Review → fix → Simplify
+last) · **No**. It also counts edits made by subagents and `codex:codex-rescue` dispatches. It's a strict
 allow-list — it stays silent on read-only / Q&A tasks **and** whenever it can't inspect history
 (no/unreadable transcript) — and guards against re-prompting loops (`stop_hook_active` + a transcript
 marker). Activates from the next session (Claude Code may show a one-time hook-approval prompt).

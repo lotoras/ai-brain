@@ -266,7 +266,8 @@ try {
       ` brief must be self-contained — subagents never see this chat: objective, exact paths,` +
       ` findings already gathered, constraints, required output format. Prefer continuing an` +
       ` existing agent (SendMessage) over respawning a new one. If the session model changes` +
-      ` mid-session, adopt the policy matching the new model. Your value is judgment per token.`
+      ` mid-session, adopt the policy matching the new model. Your value is judgment per token.` +
+      ` Planned work runs the threebrain pipeline: Codex tests → Sonnet code → Codex review → Opus simplify last.`
     );
   } else if (modelClass === 'opus') {
     parts.push(
@@ -283,7 +284,8 @@ try {
       ` the cheapest tier that holds quality: sweep effort before switching model; cheaper workers` +
       ` pay off for well-specified or parallel work, not for a single dependent chain. Briefs self-contained (objective, exact paths, gathered findings, output` +
       ` format); compact returns; Grep head_limit; ranged reads; continue agents over respawning.` +
-      ` If the session model changes mid-session, adopt the matching policy.`
+      ` If the session model changes mid-session, adopt the matching policy.` +
+      ` Planned work runs the threebrain pipeline: Codex tests → Sonnet code → Codex review → Opus simplify last.`
     );
   } else {
     // unknown — model set via CLI flag or fresh install

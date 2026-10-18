@@ -43,10 +43,32 @@ if($missing.Count){
 
 # 2) Global CLIs -------------------------------------------------------------
 Step "2/7 Global CLIs (codex)"
-foreach($t in @(@{cmd='codex';pkg='@openai/codex'})){
-  if(Have $t.cmd){ Ok "$($t.cmd) already installed" }
+foreach($t in @(@{cmd='codex';pkg='@openai/codex@latest';upgrade=$true})){
+  if((Have $t.cmd) -and -not $t.upgrade){ Ok "$($t.cmd) already installed" }
   elseif($Check){ Would "npm i -g $($t.pkg)" }
   else{ Info "npm i -g $($t.pkg)"; npm i -g $t.pkg; if($LASTEXITCODE -eq 0){ Ok "installed $($t.pkg)" } else { Warn "npm install $($t.pkg) returned $LASTEXITCODE" } }
+}
+
+# Codex model pin: merge setup/codex-home/config.toml -> ~/.codex/config.toml (never overrides an existing model)
+$cfgSrc = Join-Path $root 'codex-home/config.toml'
+$cfgDst = Join-Path $env:USERPROFILE '.codex/config.toml'
+if(Test-Path $cfgSrc){
+  if($Check){ Would "merge codex-home/config.toml -> ~/.codex/config.toml (copy if missing; prepend if no top-level model; else leave)" }
+  elseif(-not (Test-Path $cfgDst)){
+    New-Item -ItemType Directory -Force -Path (Split-Path $cfgDst) | Out-Null
+    Copy-Item $cfgSrc $cfgDst -Force
+    Ok "wrote ~/.codex/config.toml (model pin)"
+  } else {
+    $top = @(); foreach($l in (Get-Content $cfgDst)){ if($l -match '^\s*\['){ break }; $top += $l }
+    if(@($top | Where-Object { $_ -match '^\s*model\s*=' }).Count){
+      Warn "~/.codex/config.toml already sets a model - left as-is (template pin: $cfgSrc)"
+    } else {
+      Copy-Item $cfgDst "$cfgDst.bak-$(Get-Date -Format 'yyyyMMdd-HHmmss')" -Force
+      $merged = (Get-Content $cfgSrc -Raw).TrimEnd() + "`n`n" + (Get-Content $cfgDst -Raw)
+      [System.IO.File]::WriteAllText($cfgDst, $merged, (New-Object System.Text.UTF8Encoding($false)))
+      Ok "prepended model pin to ~/.codex/config.toml (backup kept alongside)"
+    }
+  }
 }
 
 # 3) Marketplaces ------------------------------------------------------------
@@ -64,6 +86,14 @@ foreach($p in 'superpowers@ai-brain','frontend-design@claude-plugins-official','
   claude plugin install $p --scope user
   claude plugin enable ($p.Split('@')[0]) 2>$null
   if($LASTEXITCODE -eq 0){ Ok "plugin $p" } else { Warn "plugin $p (already installed?)" }
+}
+# Keep the codex plugin current (non-fatal)
+if($Check){ Would "claude plugin marketplace update openai-codex; claude plugin update codex@openai-codex" }
+else {
+  claude plugin marketplace update openai-codex
+  if($LASTEXITCODE -ne 0){ Warn "marketplace update openai-codex failed ($LASTEXITCODE) - continuing" }
+  claude plugin update codex@openai-codex
+  if($LASTEXITCODE -eq 0){ Ok "codex plugin up to date" } else { Warn "codex plugin update returned $LASTEXITCODE - continuing" }
 }
 
 # 5) Config copy with backup -------------------------------------------------

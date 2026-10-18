@@ -12,7 +12,7 @@ A single plugin, **`ai-brain`**, bundling these skills:
 | **pixel-art** | Generates pixel art in a reusable style. Opus-direct by default, ChatGPT on request; the style is saved as a `.md` for consistency. Also builds looping sprite animations (sprite sheet + frame data). |
 | **recolor-icons** | Knock out icon backgrounds and recolor PNGs — **solid by default** (any color), **gradient** on request (Petrol `#006b6e` → mid-green `#a8d680`); left dark if no color is asked. Pillow + NumPy. |
 | **site-style** | Base styling for claude.ai/design: a short interview, then a `./DESIGN.md` for a whole site or one ready-to-paste prompt for a single artifact. Overrides the generic AI look. |
-| **threebrain** | Auto-router: delegate review / adversarial / rescue to **Codex**, and video/audio/YouTube perception to **ChatGPT** (in-browser). |
+| **threebrain** | Auto-router: delegate test-writing (planned work, spec-first) / review / adversarial / rescue to **Codex** (`gpt-6.1-sol`), and video/audio/YouTube perception to **ChatGPT** (in-browser). Claude orchestrates and runs Simplify last. |
 | **cc-enhance** | Rewrite a raw prompt into a tight Role + Task block for Claude Code (Opus). Routes media/icon requests to `media-gen`. Always ends the Task with `use ultracode`. |
 | **setup-brain** | Provision a new device: install this whole plugin set + replicate config (`clauded` launcher, statusline, keybindings, global `CLAUDE.md`, `dream`) and guide the logins. |
 
@@ -48,6 +48,7 @@ setup/
   setup.ps1 / setup.sh               # new-device bootstrap (idempotent, -Check/--check)
   SETUP.md                           # runbook + manual-login guide
   claude-home/                       # config snapshot copied into ~/.claude (no secrets)
+  codex-home/config.toml             # Codex model pin, merged into ~/.codex/config.toml
 ```
 
 ## Editing skills

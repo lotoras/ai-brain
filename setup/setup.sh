@@ -37,12 +37,26 @@ fi
 
 # 2) Global CLIs
 step "2/7 Global CLIs (codex)"
-for pair in "codex:@openai/codex"; do
-  cmd="${pair%%:*}"; pkg="${pair#*:}"
-  if have "$cmd"; then ok "$cmd already installed"
+for pair in "codex:@openai/codex@latest:upgrade"; do
+  cmd="${pair%%:*}"; rest="${pair#*:}"; pkg="${rest%%:*}"; mode="${rest##*:}"
+  if have "$cmd" && [ "$mode" != "upgrade" ]; then ok "$cmd already installed"
   elif [ $CHECK -eq 1 ]; then would "npm i -g $pkg"
   else cyan "npm i -g $pkg"; npm i -g "$pkg" && ok "installed $pkg" || warn "npm install $pkg failed"; fi
 done
+
+# Codex model pin: merge setup/codex-home/config.toml -> ~/.codex/config.toml (never overrides an existing model)
+CFG_SRC="$ROOT/codex-home/config.toml"; CFG_DST="$HOME/.codex/config.toml"
+if [ -f "$CFG_SRC" ]; then
+  if [ $CHECK -eq 1 ]; then would "merge codex-home/config.toml -> ~/.codex/config.toml (copy if missing; prepend if no top-level model; else leave)"
+  elif [ ! -f "$CFG_DST" ]; then
+    mkdir -p "$(dirname "$CFG_DST")"; cp "$CFG_SRC" "$CFG_DST"; ok "wrote ~/.codex/config.toml (model pin)"
+  elif awk '/^[[:space:]]*\[/{exit} /^[[:space:]]*model[[:space:]]*=/{f=1} END{exit !f}' "$CFG_DST"; then
+    warn "~/.codex/config.toml already sets a model - left as-is (template pin: $CFG_SRC)"
+  else
+    cp "$CFG_DST" "$CFG_DST.bak-$(date +%Y%m%d-%H%M%S)"
+    { cat "$CFG_SRC"; printf '\n'; cat "$CFG_DST"; } > "$CFG_DST.tmp" && mv "$CFG_DST.tmp" "$CFG_DST" && ok "prepended model pin to ~/.codex/config.toml (backup kept alongside)"
+  fi
+fi
 
 # 3) Marketplaces
 step "3/7 Plugin marketplaces"
@@ -59,6 +73,12 @@ for p in superpowers@ai-brain frontend-design@claude-plugins-official codex@open
     claude plugin install "$p" --scope user && claude plugin enable "${p%@*}" >/dev/null 2>&1 && ok "plugin $p" || warn "plugin $p (already installed?)"
   fi
 done
+# Keep the codex plugin current (non-fatal)
+if [ $CHECK -eq 1 ]; then would "claude plugin marketplace update openai-codex; claude plugin update codex@openai-codex"
+else
+  claude plugin marketplace update openai-codex || warn "marketplace update openai-codex failed - continuing"
+  claude plugin update codex@openai-codex && ok "codex plugin up to date" || warn "codex plugin update failed - continuing"
+fi
 
 # 5) Config copy with backup
 step "5/7 Config -> ~/.claude (with backup)"

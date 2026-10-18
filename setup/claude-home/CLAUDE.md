@@ -19,6 +19,14 @@ for finished image/icon/video assets. Large-context text/code analysis stays wit
 context). One delegate per task; pass the
 user's phrasing through; serialize browser work.
 
+Planned work (multi-file feature/bugfix) splits phases between Claude and Codex: Haiku explores →
+Opus plans (`.claude/plans/<slug>.md` with acceptance criteria) → **Codex writes the failing tests**
+(`codex:codex-rescue`, tests only) → Sonnet coders make them pass (never editing the tests) → Claude
+verifies (2 failed fix rounds → `/codex:rescue`) → **Codex reviews** → Sonnet fixes findings →
+**Opus `/simplify` last**. Micro-edits skip the plan/test phases. Codex unavailable → `testing-coder`
+writes the tests and `superpowers:requesting-code-review` reviews. Codex (`gpt-6.1-sol`, pinned in
+`~/.codex/config.toml`) — never use the plugin's stale `spark` alias; keep its stop-review gate off.
+
 Project agents follow a standard model policy: architects/planners default to **Opus** and are
 **Fable-upgradeable** in non-Fable sessions only — upgrade only when the task explicitly says to
 use Fable (typically via cc-enhance "use fable") and the session is NOT on Fable 5, by dispatching
@@ -80,10 +88,13 @@ main thread, forwarding raw tool output, two agents covering the same area.
 
 After finishing any task that **changed code**, the `threebrain-after-task` Stop hook will ask
 whether to run a threebrain pass — **Simplify** (`/simplify`) · **Review** (`/codex:review`) ·
-**Both** · **No**. Let the hook be the single ask: do **not** also offer a threebrain pass in prose
-yourself. Stay silent on read-only / Q&A tasks (the hook stays silent there too). Models for the
-pass: **Simplify** runs on **Opus** (dispatch a `model: "opus"` subagent if the session isn't on
-Opus); **Review** is done by **Codex**, triggered/relayed by a **Haiku** subagent — Haiku only triggers `/codex:review` and relays
+**Review + Simplify** (Review → fix → Simplify last) · **No**. Review auto-switches to
+`/codex:adversarial-review` when `src/auth/**`, `**/migrations/**`, or `**/billing/**` were touched.
+The hook also detects edits made by subagents and `codex:codex-rescue` dispatches. Let the hook be
+the single ask: do **not** also offer a threebrain pass in prose yourself. Stay silent on read-only
+/ Q&A tasks (the hook stays silent there too). Models for the pass: **Simplify** runs on **Opus**
+(dispatch a `model: "opus"` subagent if the session isn't on Opus); **Review** is done by **Codex**,
+triggered/relayed by a **Haiku** subagent — Haiku only triggers the Codex review and relays
 Codex's output verbatim, never summarising or reviewing the code itself.
 
 Plans and large findings travel as files (`.claude/plans/<task-slug>.md`,

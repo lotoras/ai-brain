@@ -7,7 +7,9 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
    orchestrator (never edit directly); Opus → planner in the main thread (direct-edit exception);
    anything else → follow this workflow as written.
 2. **Map the task to delegates**: plan/design → `<domain>-architect` (Opus); code changes →
-   `<domain>-coder` (Opus); tests → `testing-architect` / `testing-coder`; locate sweeps →
+   `<domain>-coder` (Opus); planned-work tests → Codex
+   (`codex:codex-rescue`, falling back to `testing-coder`), test infrastructure → `testing-architect` /
+   `testing-coder`; locate sweeps →
    Explore subagent (`model: "haiku"`, effort low for plain greps, medium for broad mapping;
    fallback `model: "sonnet"` at low effort only if Haiku is unavailable or its sweep comes back
    thin); verify/check passes → Haiku (effort low); judgment reads (summarise, audit, compare) → Opus at low
@@ -18,7 +20,8 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
 4. **Dispatch** (in parallel when layers are independent), then **verify**: review the compact
    return, run {{TEST_COMMAND}}, confirm the diff is minimal before reporting done. If the task
    fans out across many files/layers/concerns, script it as a **workflow** instead of hand-chaining
-   dispatches — see "Dynamic workflows (Workflow tool)".
+   dispatches — see "Dynamic workflows (Workflow tool)". Planned work follows Phases 3–7
+   (Codex tests → Sonnet code → verify → Codex review → Opus simplify last).
 
 ## Phase 1: Understand
 
@@ -34,11 +37,24 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
 ## Phase 2: Plan
 
 4. **State the problem and solution in plain language** before writing code — what's wrong, what
-   changes, which files.
+   changes, which files. For planned work (multi-file feature/bugfix) write it to
+   `.claude/plans/<slug>.md` **with acceptance criteria** — the tests in Phase 3 are derived from it.
 5. **Check for existing tests** covering the affected behavior. If none exist, suggest the right
    test type to the user and wait for their answer before proceeding.
 
-## Phase 3: Execute with Sub-Agents
+## Phase 3: Tests (Codex) — planned work only
+
+Micro-edits skip Phases 2–3. For planned work, **Codex writes the failing tests first** (spec-first,
+decorrelated from the implementer): dispatch the `codex:codex-rescue` agent with a test-writing
+brief — read the plan file, write **failing tests only**, no non-test source edits, return the test
+files + test command + red output. Confirm the tests fail for the right reason before moving on.
+Test infrastructure (fixtures, factories, helpers) stays with {{TEST_PLANNER_NAMES}} / the testing
+coders.
+
+**Fallback** — Codex unavailable or out of quota: the `testing-coder` (Sonnet) writes the failing
+tests from the plan instead.
+
+## Phase 4: Implement with Sub-Agents
 
 **Every code edit MUST go through a named sub-agent — no direct `Edit` / `Write` from the main
 thread, even for one-line changes.** (Opus sessions: see the direct-edit exception — never on Fable.) *(Direct-edit exception: any single-file change, or a small
@@ -52,17 +68,35 @@ thread plans and verifies only. Dispatch by layer:
 If a change spans multiple layers, dispatch the corresponding coders **in parallel** (single
 message, multiple `Agent` tool calls), each with only the context relevant to its layer.
 
+When Phase 3 produced tests, the coder's goal is to make them pass (green). A coder never edits
+those tests — if one looks wrong, it flags it in its return and the orchestrator decides.
+
 ### What the main thread may do directly
 - Read files (`Read`, `Grep`, `Glob`) within the reading discipline below
 - Run read-only shell commands (git status/log/diff, tests, linters)
 - Write plan files in plan mode and memory files
 - Dispatch sub-agents
 
-## Phase 4: Verify
+## Phase 5: Verify
 
 - **Review what the sub-agents produced** — minimal, matches the plan, follows existing patterns,
   nothing unrelated touched.
 - **Run the tests** for the affected area: {{TEST_COMMAND}}
+- After **2 failed fix rounds**, stop retrying and hand off to `/codex:rescue`.
+
+## Phase 6: Review (Codex) — planned work
+
+Run `/codex:review` over the change; use `/codex:adversarial-review` instead if `src/auth/**`,
+`**/migrations/**`, or `**/billing/**` were touched. Give findings to a Sonnet coder to fix under
+`superpowers:receiving-code-review` discipline (verify each finding, don't blindly apply), then
+re-run the tests. **Fallback** — Codex unavailable or out of quota: `superpowers:requesting-code-review`.
+The Codex plugin's stop-review gate stays disabled (it duplicates this phase; 900s timeout).
+
+## Phase 7: Simplify (Claude Opus, last)
+
+Run `/simplify` last — it needs whole-repo context — then re-run the tests. The global threebrain
+Stop hook offers this and Review (Simplify · Review · Review + Simplify · No); micro-edits skip
+straight to that ask.
 
 ## Session-model discipline
 

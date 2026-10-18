@@ -14,7 +14,8 @@ fable") and the session is NOT on Fable 5, dispatch them with `model: "fable"` (
 override beats the frontmatter default); in Fable 5 sessions architects always stay Opus — the
 orchestrator's plan review is the Fable pass, never double-pay. Architect effort ladder: `high` by default, `xhigh`
 for hard/cross-cutting designs, then Fable via the explicit upgrade. Test planners ({{TEST_PLANNER_NAMES}}) are
-always **Opus**; coders keep `model: opus` in frontmatter but plan-driven / well-specified coding, test
+always **Opus** and, with the testing coders, own test infrastructure plus the Codex fallback (for planned
+work **Codex writes the first failing tests** via `codex:codex-rescue` and reviews afterward); coders keep `model: opus` in frontmatter but plan-driven / well-specified coding, test
 writing are dispatched with `model: "sonnet"` (**Sonnet**, effort medium), while purely mechanical, exactly-specified edits (verbatim find/replace, ID swaps, template copy/sync) are dispatched with `model: "haiku"` (**Haiku**), escalating to Sonnet on failed verification — agent frontmatter can't set effort; the effort values apply to workflow `agent()` stages — plain `Agent` dispatches run at the session effort); escalate to **Opus** for
 cross-cutting, security, auth/billing or migration work, no written plan, a single dependent chain, or
 a Sonnet coder that returned blocked / failed verification (a stuck Sonnet coder returns `Open
@@ -45,4 +46,5 @@ implementation → the named coder (Opus), planning/judging → the architect (O
 
 Plans and large findings travel as files (`.claude/plans/`, `.claude/findings/`), not inline text.
 Per task: detect session model → map delegates → brief per contract → dispatch → verify. Full
-procedure: `.claude/rules/workflow.md` → How to proceed.
+procedure: `.claude/rules/workflow.md` → How to proceed. Planned work runs the threebrain pipeline:
+Codex tests → Sonnet code → Codex review → Opus simplify last.
