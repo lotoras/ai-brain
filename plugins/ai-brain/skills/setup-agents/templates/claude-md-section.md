@@ -34,7 +34,7 @@ handoffs.
 
 **Dynamic workflows:** multi-agent orchestration via the **Workflow** tool is authorized as a
 standing default here — treat this as my explicit opt-in; never ask first. Prompts enhanced via
-cc-enhance always end with the `use ultracode` keyword — that keyword alone arms the Workflow tool
+cc-enhance end with the `use ultracode` keyword (except really small tasks) — that keyword alone arms the Workflow tool
 even in sessions without this standing opt-in. Use a workflow for anything with fan-out shape
 (multi-file feature, review/audit, migration, research sweep, verify pass); a single `Agent`
 dispatch stays right for one-step work. Every `agent()` stage sets `agentType` or `model`

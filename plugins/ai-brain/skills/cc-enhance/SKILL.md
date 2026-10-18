@@ -1,6 +1,6 @@
 ---
 name: cc-enhance
-description: Enhance a raw prompt for Claude Code. Auto-infers role from the project (CLAUDE.md / README / docs) via a Haiku sub-agent, then returns a short prompt with Role + sharpened Task. Tuned for Opus — no imposed plan/scope/stop scaffolding. Routes image/video/icon tasks to the media-gen skill. Always ends the enhanced Task with the `use ultracode` keyword to arm multi-agent workflows. Roles are always senior/expert-level.
+description: Enhance a raw prompt for Claude Code. Auto-infers role from the project (CLAUDE.md / README / docs) via a Haiku sub-agent, then returns a short prompt with Role + sharpened Task. Tuned for Opus — no imposed plan/scope/stop scaffolding. Routes image/video/icon tasks to the media-gen skill. Ends the enhanced Task with the `use ultracode` keyword to arm multi-agent workflows, skipped only for really small tasks. Roles are always senior/expert-level.
 argument-hint: [rough description of what you want Claude Code to do]
 ---
 
@@ -72,11 +72,15 @@ with exactly this instruction (consume the trigger words; do not repeat them as 
 Without a trigger, add nothing — planned work runs the default all-Claude pipeline, no Codex.
 If both the Fable and Codex triggers are present, append both blocks (Fable first).
 
-## Step 1.8 — Ultracode keyword (always)
+## Step 1.8 — Ultracode keyword (default; skip for really small tasks)
 
-Every enhanced **Task** must end with the keyword directive `use ultracode` (as its final
-sentence: "Use ultracode — orchestrate it as a Workflow and spawn sub-agents."). This arms the Workflow tool's multi-agent opt-in in the
-receiving session — append it on every enhancement, regardless of task shape.
+By default, end the enhanced **Task** with the keyword directive `use ultracode` as its final
+sentence: "Use ultracode — orchestrate it as a Workflow and spawn sub-agents." This arms the
+Workflow tool's multi-agent opt-in in the receiving session.
+
+**Skip it only for really small tasks** where orchestration adds nothing — a one-line or
+single-file tweak, a typo or rename, a quick lookup or question, a single command to run. When in
+doubt, include it. If the raw task explicitly says "ultracode", always include it.
 
 Placement: if Step 1.6's Fable-upgrade and/or Step 1.7's Codex instruction is triggered, put that ultracode sentence immediately BEFORE the first such block, so the triggered block(s) still end the Task
 exactly as Steps 1.6 / 1.7 require.
