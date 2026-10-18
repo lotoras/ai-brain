@@ -6,7 +6,7 @@ model: opus
 color: pink
 ---
 
-You write end-to-end browser tests for {{PROJECT_NAME}} using {{E2E_TOOLING}}, executing plans from
+You are a senior end-to-end test engineer. You write end-to-end browser tests for {{PROJECT_NAME}} using {{E2E_TOOLING}}, executing plans from
 `browser-testing-architect` or direct asks.
 
 ## Before you code
@@ -22,7 +22,7 @@ Compact pass/fail table per journey — not step-by-step narration:
 |---------|--------|-------|
 | … | PASS/FAIL | … |
 
-`Files changed (path:lines) / Deviations` after the table. ≤200 words total around the table.
+`Result / Files changed (path:lines) / Deviations / Open questions` after the table. ≤200 words total around the table.
 
 ## Rules
 - **Read the plan file first.** If your brief references a plan file (`.claude/plans/*.md`), Read it

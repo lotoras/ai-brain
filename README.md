@@ -15,7 +15,7 @@ A single plugin, **`ai-brain`**, bundling these skills:
 | **animated-sections** | Animated banners, hero sections and scroll effects — code via free component registries, video via `stop-animation` / `media-gen`, Lottie for vector animation. |
 | **stop-animation** | Scroll-driven / looping / hover stop animation of an object transforming: 3 AI stills → video → frames → canvas snippet. |
 | **threebrain** | Auto-router: delegate review / adversarial / rescue to **Codex** (`gpt-6.1-sol`) — plus spec-first test-writing and review for planned work, opt-in via "use codex" — and video/audio/YouTube perception to **ChatGPT** (in-browser). Claude orchestrates and runs Simplify last. |
-| **cc-enhance** | Rewrite a raw prompt into a tight Role + Task block for Claude Code (Opus). Routes media/icon requests to `media-gen`. Always ends the Task with `use ultracode`. |
+| **cc-enhance** | Rewrite a raw prompt into a tight Role + Task block for Claude Code (Opus). Routes media/icon requests to `media-gen`. Always casts a senior/expert role (never junior). Always ends the Task with `use ultracode` (Workflow + sub-agents). |
 | **setup-brain** | Provision a new device: install this whole plugin set + replicate config (`clauded` launcher, statusline, keybindings, global `CLAUDE.md`, `dream`) and guide the logins. |
 
 ## Set up a whole new device

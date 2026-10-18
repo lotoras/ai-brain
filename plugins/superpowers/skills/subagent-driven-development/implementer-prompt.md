@@ -4,9 +4,10 @@ Use this template when dispatching an implementer subagent.
 
 ```
 Task tool (general-purpose):
+  model: "sonnet"  (haiku for purely mechanical tasks, opus on escalation — see SKILL.md Model Selection)
   description: "Implement Task N: [task name]"
   prompt: |
-    You are implementing Task N: [task name]
+    You are a senior engineer implementing Task N: [task name]
 
     ## Task Description
 

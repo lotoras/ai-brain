@@ -7,7 +7,9 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
    orchestrator (never edit directly); Opus → planner in the main thread (direct-edit exception);
    anything else → follow this workflow as written.
 2. **Map the task to delegates**: plan/design → `<domain>-architect` (Opus); code changes →
-   `<domain>-coder` (Opus); planned-work tests → `testing-coder`
+   `<domain>-coder` (Sonnet via `model: "sonnet"` for plan-driven work; Haiku via
+   `model: "haiku"` for purely mechanical, exactly-specified edits; Opus on escalation);
+   planned-work tests → `testing-coder`
    (Sonnet; Codex via `codex:codex-rescue` only when the user says "use codex"), test infrastructure →
    `testing-architect` / `testing-coder`; locate sweeps →
    Explore subagent (`model: "haiku"`, effort low for plain greps, medium for broad mapping;

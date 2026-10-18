@@ -8,9 +8,10 @@ Use this template when dispatching a spec document reviewer subagent.
 
 ```
 Task tool (general-purpose):
+  model: "opus"
   description: "Review spec document"
   prompt: |
-    You are a spec document reviewer. Verify this spec is complete and ready for planning.
+    You are a senior spec document reviewer. Verify this spec is complete and ready for planning.
 
     **Spec to review:** [SPEC_FILE_PATH]
 

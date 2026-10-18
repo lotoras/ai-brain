@@ -6,6 +6,7 @@ Use this template when dispatching a code reviewer subagent.
 
 ```
 Task tool (general-purpose):
+  model: "opus"
   description: "Review code changes"
   prompt: |
     You are a Senior Code Reviewer with expertise in software architecture,

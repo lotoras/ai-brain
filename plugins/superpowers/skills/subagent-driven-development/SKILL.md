@@ -90,11 +90,11 @@ digraph process {
 
 Use the least powerful model that can handle each role to conserve cost and increase speed.
 
-**Mechanical implementation tasks** (isolated functions, clear specs, 1-2 files): use a fast, cheap model. Most implementation tasks are mechanical when the plan is well-specified.
+**Mechanical implementation tasks** (isolated functions, clear specs, 1-2 files): use a fast, cheap model (`model: "haiku"`). Most implementation tasks are mechanical when the plan is well-specified.
 
-**Integration and judgment tasks** (multi-file coordination, pattern matching, debugging): use a standard model.
+**Integration and judgment tasks** (multi-file coordination, pattern matching, debugging): use a standard model (`model: "sonnet"` — the default for plan-driven implementation).
 
-**Architecture, design, and review tasks**: use the most capable available model.
+**Architecture, design, and review tasks**: use the most capable available model (`model: "opus"`).
 
 **Task complexity signals:**
 - Touches 1-2 files with a complete spec → cheap model
@@ -113,7 +113,7 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 
 **BLOCKED:** The implementer cannot complete the task. Assess the blocker:
 1. If it's a context problem, provide more context and re-dispatch with the same model
-2. If the task requires more reasoning, re-dispatch with a more capable model
+2. If the task requires more reasoning, re-dispatch with a more capable model (haiku → sonnet → opus)
 3. If the task is too large, break it into smaller pieces
 4. If the plan itself is wrong, escalate to the human
 

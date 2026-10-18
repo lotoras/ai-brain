@@ -1,6 +1,6 @@
 ---
 name: cc-enhance
-description: Enhance a raw prompt for Claude Code. Auto-infers role from the project (CLAUDE.md / README / docs) via a Haiku sub-agent, then returns a short prompt with Role + sharpened Task. Tuned for Opus — no imposed plan/scope/stop scaffolding. Routes image/video/icon tasks to the media-gen skill. Always ends the enhanced Task with the `use ultracode` keyword to arm multi-agent workflows.
+description: Enhance a raw prompt for Claude Code. Auto-infers role from the project (CLAUDE.md / README / docs) via a Haiku sub-agent, then returns a short prompt with Role + sharpened Task. Tuned for Opus — no imposed plan/scope/stop scaffolding. Routes image/video/icon tasks to the media-gen skill. Always ends the enhanced Task with the `use ultracode` keyword to arm multi-agent workflows. Roles are always senior/expert-level.
 argument-hint: [rough description of what you want Claude Code to do]
 ---
 
@@ -13,16 +13,18 @@ You do not execute the task yourself. You only produce the prompt text.
 
 Never ask the user a clarifying question — always figure it out yourself.
 
-If the user already stated a role ("as a Laravel dev", "you are a senior React engineer"), use it.
+If the user already stated a role ("as a Laravel dev", "you are a senior React engineer"), use it — subject to the seniority floor below.
+
+**Seniority floor (always):** the role is always senior-level or above — `a senior …`, `an expert …`, or staff/principal. Never junior, mid-level, intern, entry-level, or a bare role with no seniority. If the user states a lower level ("as a junior Laravel dev"), keep their stack/domain and raise it to senior. The same floor applies to the Haiku agent's line and to the fallback inference below.
 
 Otherwise dispatch ONE sub-agent to infer it:
 
 - Tool: `Agent`
 - `subagent_type`: `Explore` (or `general-purpose`)
 - `model`: `haiku`
-- Prompt: "Look at CLAUDE.md, README.md, and any top-level `.md` files in `docs/` to figure out the tech stack, domain, and likely role of someone working on the task below. Return ONE line: a role phrased as 'a [seniority] [stack/domain] [role]' — nothing else. Task: <user's raw task>."
+- Prompt: "Look at CLAUDE.md, README.md, and any top-level `.md` files in `docs/` to figure out the tech stack, domain, and likely role of someone working on the task below. Return ONE line: a role phrased as 'a senior [stack/domain] [role]' (or 'an expert …') — never junior or mid-level — nothing else. Task: <user's raw task>."
 
-Use the returned line as the role. If the agent returns nothing useful, infer the role from the task description itself (keywords, frameworks, verbs) and proceed.
+Use the returned line as the role. If the agent returns nothing useful, infer the role from the task description itself (keywords, frameworks, verbs) — still senior or expert — and proceed.
 
 ## Step 1.5 — Media / icon tasks (route to media-gen)
 
@@ -75,11 +77,10 @@ If both the Fable and Codex triggers are present, append both blocks (Fable firs
 ## Step 1.8 — Ultracode keyword (always)
 
 Every enhanced **Task** must end with the keyword directive `use ultracode` (as its final
-sentence, e.g. "Use ultracode."). This arms the Workflow tool's multi-agent opt-in in the
+sentence: "Use ultracode — orchestrate it as a Workflow and spawn sub-agents."). This arms the Workflow tool's multi-agent opt-in in the
 receiving session — append it on every enhancement, regardless of task shape.
 
-Placement: if Step 1.6's Fable-upgrade and/or Step 1.7's Codex instruction is triggered, put "Use
-ultracode." immediately BEFORE the first such block, so the triggered block(s) still end the Task
+Placement: if Step 1.6's Fable-upgrade and/or Step 1.7's Codex instruction is triggered, put that ultracode sentence immediately BEFORE the first such block, so the triggered block(s) still end the Task
 exactly as Steps 1.6 / 1.7 require.
 If the raw task already contains "ultracode", do not duplicate it — exactly one occurrence.
 
@@ -88,7 +89,7 @@ If the raw task already contains "ultracode", do not duplicate it — exactly on
 Emit exactly this structure, filled in from the user's task:
 
     ## Role
-    You are [role from Step 1, phrased with the specific expertise that matters for this task].
+    You are [a senior / an expert role from Step 1 — never below senior — phrased with the specific expertise that matters for this task].
 
     ## Task
     [Rewrite the user's request as one or two concrete sentences. Sharpen the verbs, make the end state explicit, keep the user's intent intact. For media/icon tasks, name the media-gen / recolor-icons skills per Step 1.5.]

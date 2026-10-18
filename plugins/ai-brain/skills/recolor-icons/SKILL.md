@@ -13,7 +13,7 @@ installed plugin, on this machine `C:\laragon\www\ai-brain\plugins\ai-brain`):
 
 ```powershell
 # 1. Make white / near-white background transparent (keeps the dark line color)
-python "C:\laragon\www\ai-brain\plugins\ai-brain\skills\recolor-icons\transparent-bg.py" <file-or-folder>
+python "${CLAUDE_PLUGIN_ROOT}\skills\recolor-icons\transparent-bg.py" <file-or-folder>
 #    -> <name>-transparent.png
 
 # 2. SOLID recolor (the recolor mode when a color is named). Optional color; falls back to Petrol #006b6e

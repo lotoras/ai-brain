@@ -1,7 +1,7 @@
 ---
 name: pixel-art
 description: Generate true pixel art in a reusable, consistent style — sprites, characters, items, tiles, tilesets, pixel icons, small scenes, and looping sprite animations (sprite sheet + frame data). Resolves or creates a style file first (interview → example images → saved style .md), then draws every asset on a real pixel grid with a locked palette. Use when the user asks for "pixel art", a "sprite", "sprite sheet", "sprite animation" / "walk cycle" / "idle loop" / "animate this sprite", "tileset", "8-bit" / "16-bit" / "retro game" graphics, a "pixel icon", "NES / Game Boy / SNES / PICO-8 style", or says "in my pixel style" / passes a pixel-art style file. Do NOT use for photorealistic or vector images (media-gen) or for recolouring existing icons (recolor-icons).
-argument-hint: [subject] [style name | path to style .md | style description]
+argument-hint: "[subject] [style name | path to style .md | style description]"
 ---
 
 # pixel-art — consistent pixel art from a saved style
