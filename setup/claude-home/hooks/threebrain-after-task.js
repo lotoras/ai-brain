@@ -359,7 +359,9 @@ if (!blindSpot) {
 const sensitive = changedPaths.some(function (p) { return SENSITIVE_PATH.test(p); });
 const pending = pendingAgents(tp);
 if (pending.length) {
-  writeDeferred(tp, changedCode, sensitive, pending, boundaryTs);
+  // Blind spot -> no reliable boundary: don't record the agents (a null `since` would replay
+  // their whole history, including edits from earlier turns). Still defer.
+  writeDeferred(tp, changedCode, sensitive, blindSpot ? [] : pending, boundaryTs);
   stop();
 }
 const deferred = readDeferred(tp);

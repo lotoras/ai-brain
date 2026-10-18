@@ -1,6 +1,6 @@
 ---
 name: threebrain
-description: Use whenever the user's request matches a Three Model Brain trigger — Codex for test-writing (planned work) and review/adversarial/rescue, ChatGPT (in-browser) for video/audio/YouTube perception, media-gen for finished image/icon/video assets, the pixel-art skill for pixel art / sprites / tilesets, or any edit touching src/auth/**, **/migrations/**, **/billing/**. Silently routes the task to the right brain; otherwise stays asleep and lets Claude answer directly.
+description: Use whenever the user's request matches a Three Model Brain trigger — Codex for test-writing (planned work, only when the user says "use codex") and review/adversarial/rescue, ChatGPT (in-browser) for video/audio/YouTube perception, media-gen for finished image/icon/video assets, the pixel-art skill for pixel art / sprites / tilesets, or any edit touching src/auth/**, **/migrations/**, **/billing/**. Silently routes the task to the right brain; otherwise stays asleep and lets Claude answer directly.
 ---
 
 # Three Model Brain auto-router
@@ -23,7 +23,7 @@ Your job: detect the trigger, fire the right delegate, return its output. Do not
 | "I'm stuck", "you've tried N times" (N≥3), "rescue this", "investigate why" | Run `/codex:rescue <user's framing>` |
 | "watch this clip / video", "what happens in this video", + a video file or YouTube URL | Upload the video (claude-in-chrome `file_upload`) or paste the URL into **ChatGPT in-browser**, ask, read the answer back |
 | "transcribe / analyze this audio", + an audio file | Upload the audio to **ChatGPT in-browser** and ask |
-| Planned multi-file feature/bugfix (after the plan file exists) | Run the **Development pipeline** below — Codex writes the red tests first (`codex:codex-rescue`) |
+| Planned multi-file feature/bugfix (after the plan file exists) **and the user said "use codex"** | Run the **Codex pipeline** below — Codex writes the red tests first (`codex:codex-rescue`). Without the trigger: default all-Claude pipeline, no Codex |
 | "create / generate / make / draw an image, icon, logo, illustration, or video" | Use the **media-gen** skill (browser → ChatGPT) — **one asset at a time** (reroute to the OpenRouter API on request — see media-gen) |
 | "pixel art", "sprite", "tileset", "8-bit / 16-bit" asset | Use the **pixel-art** skill |
 | Edit/write/refactor touching `src/auth/**`, `**/migrations/**`, or `**/billing/**` | **Forced** `/codex:adversarial-review` after the edit, before reporting done |
@@ -34,7 +34,7 @@ Your job: detect the trigger, fire the right delegate, return its output. Do not
 1. **Forced adversarial review on sensitive paths.** Any time you write/edit a file under `src/auth/**`, `**/migrations/**`, or `**/billing/**`, you MUST run the Codex adversarial review (see "Invoking Codex from Claude") after the edit and surface its findings before saying the task is done. No exceptions, even if the user didn't ask.
 2. **Pass user phrasing through.** When firing `/codex:rescue` or driving ChatGPT in-browser, include the user's own framing as the argument — don't paraphrase.
 3. **ChatGPT is in-browser only.** Reach ChatGPT through the **claude-in-chrome** MCP (`chatgpt.com`), never an API key. Use it for multimodal perception Claude can't do natively (**video / audio / YouTube** — upload the file or paste the link). Creative concepts and inventive components stay with Claude. Code analysis, large-context text scans, and file review stay with Claude/Codex.
-4. **One delegate per task — but sequential Codex handoffs are allowed.** Don't run Codex and ChatGPT in *parallel* on the same request unless the user explicitly asks for both opinions. A *sequential* cross-model check is different and encouraged: for planned work Codex gets **two** touchpoints — tests before implementation, review after (Codex writes tests → Claude implements → Codex critiques) — the intended decorrelated checks, not a violation. The review fires **only on a trigger** — a review phrase, the sensitive-path rule (#1), or the `threebrain-after-task` Stop-hook choice — never automatically on every diff; the tests touchpoint belongs to the planned-work pipeline below.
+4. **One delegate per task — but sequential Codex handoffs are allowed.** Don't run Codex and ChatGPT in *parallel* on the same request unless the user explicitly asks for both opinions. A *sequential* cross-model check is different and encouraged: when the user opted into the Codex pipeline ("use codex") for planned work, Codex gets **two** touchpoints — tests before implementation, review after (Codex writes tests → Claude implements → Codex critiques) — the intended decorrelated checks, not a violation. Without that opt-in, planned work uses no Codex. The review fires **only on a trigger** — a review phrase, the sensitive-path rule (#1), the `threebrain-after-task` Stop-hook choice, or the opted-in pipeline — never automatically on every diff.
 5. **Silent operation.** Don't preface with "routing to Codex…" — just call the slash command / open the browser. The user reads the delegate's output directly.
 6. **Serialize generation.** Browser work (media-gen and ChatGPT-in-browser) drives one tab — do it **one at a time** (prompt/upload → wait → capture → next), never parallel tabs or a multi-asset sheet.
 
@@ -42,7 +42,7 @@ Your job: detect the trigger, fire the right delegate, return its output. Do not
 
 **Who's who**
 - **Claude (you, Opus)** — orchestrator + implementer, and the **large-context brain** (1M-token window): whole-repo reasoning, cross-file traces, and code/text analysis are yours, not a delegate's. Hold the conversation, decide what to delegate, integrate results, own the final action and the user-facing summary — and own **Simplify**, which stays last.
-- **Codex** — the decorrelated checker on both sides of implementation: **test author** (spec-first, red tests from the plan), **reviewer** (review, adversarial review), and **rescuer** (deep root-cause, a second implementation opinion). Reach for rigor.
+- **Codex** — the decorrelated checker on both sides of implementation: **test author** (spec-first, red tests from the plan — only in the opt-in "use codex" pipeline), **reviewer** (review, adversarial review), and **rescuer** (deep root-cause, a second implementation opinion). Reach for rigor.
 - **ChatGPT (in-browser)** — multimodal perception Claude lacks (video / audio / YouTube). Not a text-reasoning or large-context delegate.
 - **media-gen** — *create* finished image/icon/video assets via browser ChatGPT.
 - **pixel-art** — pixel art / sprites / tilesets in a reusable saved style.
@@ -63,9 +63,13 @@ Your job: detect the trigger, fire the right delegate, return its output. Do not
 
 This keeps Claude as the single point of accountability, sends each task to the brain that's actually best at it, and never overwhelms the browser bridge.
 
-## Development pipeline
+## Codex pipeline (opt-in: "use codex")
 
-For **planned work** (multi-file feature or bugfix) the phases split between Claude and Codex. Only Claude can orchestrate (skills, hooks, subagents, 1M context); Codex is the decorrelated checker on both sides of implementation; Simplify needs Claude's whole-repo context and stays last.
+Trigger ONLY on explicit directives: "use codex", "with codex", "via codex", "run it through codex" (or cc-enhance carrying one into the enhanced prompt). Bare mentions of Codex as subject matter ("tell me about codex", "fix the codex hook", "codex config") are NOT triggers — when in doubt, don't trigger.
+
+**Default (no trigger):** Haiku explore → Opus plan → `testing-coder` (Sonnet) writes the red tests → Sonnet coders → verify → Opus `/simplify` last. Review is not a pipeline phase; it stays with the Stop-hook offer and the review / sensitive-path triggers above.
+
+With the trigger, planned work (multi-file feature or bugfix) splits the phases between Claude and Codex. Only Claude can orchestrate (skills, hooks, subagents, 1M context); Codex is the decorrelated checker on both sides of implementation; Simplify needs Claude's whole-repo context and stays last.
 
 | # | Phase | Owner | Mechanism |
 |---|---|---|---|
@@ -74,15 +78,15 @@ For **planned work** (multi-file feature or bugfix) the phases split between Cla
 | 3 | Tests (red) | Codex | dispatch the `codex:codex-rescue` agent with a test-writing brief: read the plan file, write failing tests only, no non-test source edits, return test files + test command + red output |
 | 4 | Implement (green) | Claude Sonnet coders | `<domain>-coder` makes tests pass; if a test looks wrong it flags it, never edits it |
 | 5 | Verify | Claude orchestrator | run suite; 2 failed fix rounds → `/codex:rescue` |
-| 6 | Review | Codex | `/codex:review`; `/codex:adversarial-review` if `src/auth/**`, `**/migrations/**`, `**/billing/**` touched |
+| 6 | Review | Codex | `codex-companion.mjs review --scope working-tree` via a Haiku relay (see "Invoking Codex from Claude"); `adversarial-review` if `src/auth/**`, `**/migrations/**`, `**/billing/**` touched |
 | 7 | Fix findings | Claude Sonnet coder | `superpowers:receiving-code-review` discipline |
 | 8 | Simplify (last) | Claude Opus | `/simplify`, then re-run tests |
 
-- **Scope:** the full pipeline applies to planned work. Micro-edits skip phases 2–4 and just get the Stop-hook ask.
+- **Scope:** the full Codex pipeline applies to opted-in planned work. Micro-edits skip phases 2–4 and just get the Stop-hook ask.
 - **Fallback:** Codex unavailable or out of quota → phase 3 goes to `testing-coder` (Sonnet), phase 6 to `superpowers:requesting-code-review`.
 - **Stop-review gate:** keep the Codex plugin's stop-review gate disabled — it duplicates phase 6 and has a 900s timeout.
 
-Codex test-writing brief (phase 3) — fill in and pass as the `codex:codex-rescue` prompt:
+Codex test-writing brief (phase 3, opted-in pipeline only) — fill in and pass as the `codex:codex-rescue` prompt:
 
 ```
 Objective: write FAILING tests only for the plan at .claude/plans/<slug>.md. Do not edit any non-test source file.

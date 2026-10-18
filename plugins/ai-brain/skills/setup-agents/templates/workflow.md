@@ -7,9 +7,9 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
    orchestrator (never edit directly); Opus → planner in the main thread (direct-edit exception);
    anything else → follow this workflow as written.
 2. **Map the task to delegates**: plan/design → `<domain>-architect` (Opus); code changes →
-   `<domain>-coder` (Opus); planned-work tests → Codex
-   (`codex:codex-rescue`, falling back to `testing-coder`), test infrastructure → `testing-architect` /
-   `testing-coder`; locate sweeps →
+   `<domain>-coder` (Opus); planned-work tests → `testing-coder`
+   (Sonnet; Codex via `codex:codex-rescue` only when the user says "use codex"), test infrastructure →
+   `testing-architect` / `testing-coder`; locate sweeps →
    Explore subagent (`model: "haiku"`, effort low for plain greps, medium for broad mapping;
    fallback `model: "sonnet"` at low effort only if Haiku is unavailable or its sweep comes back
    thin); verify/check passes → Haiku (effort low); judgment reads (summarise, audit, compare) → Opus at low
@@ -21,7 +21,8 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
    return, run {{TEST_COMMAND}}, confirm the diff is minimal before reporting done. If the task
    fans out across many files/layers/concerns, script it as a **workflow** instead of hand-chaining
    dispatches — see "Dynamic workflows (Workflow tool)". Planned work follows Phases 3–7
-   (Codex tests → Sonnet code → verify → Codex review → Opus simplify last).
+   (`testing-coder` tests → Sonnet code → verify → Opus simplify last; with "use codex": Codex tests →
+   Sonnet code → verify → Codex review → Opus simplify last).
 
 ## Phase 1: Understand
 
@@ -42,17 +43,19 @@ This is the orchestration rule. When referenced, follow this process end-to-end.
 5. **Check for existing tests** covering the affected behavior. If none exist, suggest the right
    test type to the user and wait for their answer before proceeding.
 
-## Phase 3: Tests (Codex) — planned work only
+## Phase 3: Tests — planned work only
 
-Micro-edits skip Phases 2–3. For planned work, **Codex writes the failing tests first** (spec-first,
-decorrelated from the implementer): dispatch the `codex:codex-rescue` agent with a test-writing
-brief — read the plan file, write **failing tests only**, no non-test source edits, return the test
+Micro-edits skip Phases 2–3. For planned work, the `testing-coder` (Sonnet) writes the **failing
+tests first** from the plan file — failing tests only, no non-test source edits, return the test
 files + test command + red output. Confirm the tests fail for the right reason before moving on.
 Test infrastructure (fixtures, factories, helpers) stays with {{TEST_PLANNER_NAMES}} / the testing
 coders.
 
-**Fallback** — Codex unavailable or out of quota: the `testing-coder` (Sonnet) writes the failing
-tests from the plan instead.
+**Codex pipeline (opt-in)** — only when the user explicitly says "use codex" ("with codex", "via
+codex", "run it through codex"; bare mentions of Codex as subject matter are NOT triggers), **Codex
+writes the failing tests first** (spec-first, decorrelated from the implementer): dispatch the
+`codex:codex-rescue` agent with the same brief. If Codex is unavailable or out of quota, fall back to
+the `testing-coder`.
 
 ## Phase 4: Implement with Sub-Agents
 
@@ -82,12 +85,16 @@ those tests — if one looks wrong, it flags it in its return and the orchestrat
 - **Review what the sub-agents produced** — minimal, matches the plan, follows existing patterns,
   nothing unrelated touched.
 - **Run the tests** for the affected area: {{TEST_COMMAND}}
-- After **2 failed fix rounds**, stop retrying and hand off to `/codex:rescue`.
+- After **2 failed fix rounds**, stop retrying: escalate to an Opus coder, or hand off to
+  `/codex:rescue` when the Codex pipeline is on.
 
-## Phase 6: Review (Codex) — planned work
+## Phase 6: Review (Codex) — only on "use codex"
 
-Run `/codex:review` over the change; use `/codex:adversarial-review` instead if `src/auth/**`,
-`**/migrations/**`, or `**/billing/**` were touched. Give findings to a Sonnet coder to fix under
+Not a default phase: review otherwise stays with the Stop-hook offer and the explicit review /
+sensitive-path triggers. When the user opted into the Codex pipeline ("use codex"), run
+`node "<plugin>/scripts/codex-companion.mjs" review --scope working-tree` through a Haiku relay
+(`adversarial-review` instead if `src/auth/**`, `**/migrations/**`, or `**/billing/**` were
+touched). Give findings to a Sonnet coder to fix under
 `superpowers:receiving-code-review` discipline (verify each finding, don't blindly apply), then
 re-run the tests. **Fallback** — Codex unavailable or out of quota: `superpowers:requesting-code-review`.
 The Codex plugin's stop-review gate stays disabled (it duplicates this phase; 900s timeout).

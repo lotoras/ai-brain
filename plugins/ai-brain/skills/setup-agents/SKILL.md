@@ -17,7 +17,7 @@ fixed; the stack only flavors names, descriptions, conventions, and commands:
 | **Think** (plan/design) | `<domain>-architect` | read-only + explore dispatch: `Bash, Read, Glob, Grep, Agent(Explore, general-purpose)` | `opus` (Fable-upgradeable; effort `high`, `xhigh` for hard/cross-cutting designs, then Fable) |
 | **Build** (implement) | `<domain>-coder` | read+write: `Bash, Glob, Grep, Read, Edit, Write` | `opus` frontmatter; dispatched `sonnet` for plan-driven work, `haiku` for purely mechanical edits (escalating to Sonnet on failed verification), Opus for escalation (effort `medium`) |
 | **Test — plan** | `testing-architect` (+ `browser-testing-architect` if e2e) | read-only | `opus` |
-| **Test — write** | `testing-coder` (+ `browser-testing-coder` if e2e) — Codex fallback + test-infrastructure owner | read+write | `opus` frontmatter; dispatched `sonnet` for plan-driven work, `haiku` for purely mechanical edits (escalating to Sonnet on failed verification), Opus for escalation (effort `medium`) |
+| **Test — write** | `testing-coder` (+ `browser-testing-coder` if e2e) — default planned-work test writer + test-infrastructure owner | read+write | `opus` frontmatter; dispatched `sonnet` for plan-driven work, `haiku` for purely mechanical edits (escalating to Sonnet on failed verification), Opus for escalation (effort `medium`) |
 | **Explore** (research/info) | `Explore` / `general-purpose` dispatches | — | `haiku` for locate sweeps (find, grep, map; fallback `sonnet` at low effort only if Haiku is unavailable or its sweep comes back thin; effort low for plain greps, medium for broad mapping) and verify/check passes (effort low); `opus` at low effort for judgment reads (summarise, audit, compare) |
 
 **Fable-upgradeable** means: the frontmatter default is `opus`, but when the task explicitly says
@@ -33,10 +33,11 @@ Split per **layer** only when the project genuinely has more than one (e.g. back
 two architect/coder pairs). A mono-layer project (CLI tool, API-only service, library, script
 collection) gets a single pair. Never invent layers the project doesn't have.
 
-For planned work, **Codex writes the first failing tests** (via the `codex:codex-rescue` agent) and
-reviews afterward — no Codex agent is provisioned. `testing-architect` / `testing-coder` stay
-provisioned as the Codex fallback (Codex unavailable or out of quota) and as owners of test
-infrastructure (fixtures, factories, helpers).
+For planned work, the `testing-coder` (Sonnet) writes the first failing tests by default. Only when
+the user says "use codex" does **Codex write the first failing tests** (via the `codex:codex-rescue`
+agent) and review afterward — no Codex agent is provisioned. `testing-architect` / `testing-coder`
+stay provisioned as the default test writers (and the Codex fallback when Codex is unavailable or out
+of quota) and as owners of test infrastructure (fixtures, factories, helpers).
 
 After-task simplify/review passes are global (threebrain Stop hook) — do not re-provision them
 here; the CLAUDE.md section template already references them without restating their routing.
