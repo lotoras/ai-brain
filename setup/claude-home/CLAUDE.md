@@ -109,7 +109,9 @@ Returns are compact and structured: `Result / Files changed (path:lines) / Devia
 questions`; coders ≤200 words, explorers ≤300 words. No duplicate exploration — paste Haiku
 findings verbatim into architect/coder briefs. Prefer continuing an existing agent (`SendMessage`)
 over respawning. Anti-patterns: whole-file reads when a range suffices, unguarded `Grep` in the
-main thread, forwarding raw tool output, two agents covering the same area.
+main thread, forwarding raw tool output, two agents covering the same area, spawning a
+placeholder/no-op agent to wait on background work (end the turn instead; they notify you —
+the `noop-agent-guard` PreToolUse hook denies it).
 
 After finishing any task that **changed code**, the `threebrain-after-task` Stop hook will ask
 whether to run a threebrain pass — **Simplify** (`/simplify`) · **Review** (`/codex:review`) ·

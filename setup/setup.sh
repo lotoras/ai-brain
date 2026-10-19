@@ -133,7 +133,7 @@ fi
 # 5) Config copy with backup
 step "5/7 Config -> ~/.claude (with backup)"
 STAMP="$(date +%Y%m%d-%H%M%S)"; BK="$CLAUDE_DIR/backup/$STAMP"; MERGE_JS="$ROOT/merge-settings.js"
-for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md hooks/threebrain-after-task.js hooks/session-model-guard.js hooks/fable-edit-guard.js hooks/ssh-guard.js; do
+for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md hooks/threebrain-after-task.js hooks/session-model-guard.js hooks/fable-edit-guard.js hooks/ssh-guard.js hooks/noop-agent-guard.js; do
   src="$SNAP/$rel"; dst="$CLAUDE_DIR/$rel"
   [ -f "$src" ] || { warn "snapshot missing $rel"; continue; }
   if [ $CHECK -eq 1 ]; then

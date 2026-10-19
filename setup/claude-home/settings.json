@@ -63,6 +63,12 @@
         "hooks": [
           { "type": "command", "command": "node ~/.claude/hooks/ssh-guard.js" }
         ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          { "type": "command", "command": "node ~/.claude/hooks/noop-agent-guard.js" }
+        ]
       }
     ]
   },

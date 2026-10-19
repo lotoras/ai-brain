@@ -96,7 +96,9 @@ const WORKFLOW_OPT_IN =
   ` self-contained brief (objective, exact paths, findings already gathered, constraints, output` +
   ` format + word cap); pass plan/finding file paths between stages, never pasted bodies. Respect` +
   ` the session's workflow size guideline (default medium, aim under 15 agents) — prefer depth over` +
-  ` width, and go bigger only when the user asks for scale.`;
+  ` width, and go bigger only when the user asks for scale. Waiting on background agents or a` +
+  ` workflow: end the turn (they notify you) or keep doing independent work — never spawn a` +
+  ` placeholder/no-op agent to fill the wait (the noop-agent-guard hook denies it).`;
 
 // Read and parse one JSON file; return null if unreadable or malformed.
 function readJson(filePath) {

@@ -73,6 +73,18 @@ allow-list — it stays silent on read-only / Q&A tasks **and** whenever it can'
 (no/unreadable transcript) — and guards against re-prompting loops (`stop_hook_active` + a transcript
 marker). Activates from the next session (Claude Code may show a one-time hook-approval prompt).
 
+### No placeholder agents
+A `PreToolUse` hook on `Agent|Task` (`~/.claude/hooks/noop-agent-guard.js`) denies do-nothing agent
+calls that a session sometimes spawns to "wait" for background agents. These are prompts of at most
+200 characters such as `noop`, `wait`, `ok`, "Reply with exactly: ok", "do nothing" or "just wait",
+or a short call whose description says placeholder, no-op or keep-alive. A fork copies the whole
+conversation, so one of these costs 60–100k tokens for no work.
+
+The deny message tells the model to end its turn instead, because background work notifies the
+session by itself. The same rule is in the injected session policy and in `CLAUDE.md`. Real briefs
+are never blocked, and the hook fails open on bad input. Tests: `node
+claude-home/hooks/noop-agent-guard.test.js`.
+
 ## Manual steps (guided — nothing is stored)
 | # | Step | How |
 |---|---|---|
