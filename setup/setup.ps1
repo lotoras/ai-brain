@@ -154,7 +154,7 @@ else {
 
 # 5) Config copy with backup -------------------------------------------------
 Step "5/7 Config -> ~/.claude (with backup)"
-$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md','hooks/threebrain-after-task.js','hooks/session-model-guard.js','hooks/fable-edit-guard.js')
+$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md','hooks/threebrain-after-task.js','hooks/session-model-guard.js','hooks/fable-edit-guard.js','hooks/ssh-guard.js')
 $mergeJs = Join-Path $root 'merge-settings.js'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $backup = Join-Path $claudeDir "backup/$stamp"
