@@ -269,6 +269,11 @@ the final static frame at 100vh height — no JavaScript animation fires.
 - **WebP corner rounding:** ±1 per channel is normal. The page background is set to the exact
   hex anyway, so any sub-pixel seam is invisible.
 - **~130 frames ≈ 6 MB** of WebP at quality=90 — normal and worth it for a seamless surface.
+- **Dark backdrops break the light-backdrop heuristics.** `extract.py`'s crop check and settle suggestion and
+  `flatten.py`'s matte detect the subject by darkness, so on a near-black backdrop they flag the backdrop itself
+  (a false "top crop", a too-early END_FRAME). Judge crop and motion from a frame contact sheet or per-frame diff
+  instead. Skip `flatten.py`, convert the raw frames to WebP directly, and set the page background to the
+  corner-median hex of the frames. (Frameshift piano hero, 2026-10-19.)
 
 ## Run-folder layout
 
