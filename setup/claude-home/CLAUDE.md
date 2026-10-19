@@ -2,9 +2,9 @@
 
 ## Media generation (any project)
 When the user asks to **create / generate / make / draw** an image, picture, icon, logo,
-illustration, or video, use the **media-gen** skill (browser → **ChatGPT**) — generate **one asset at a time**. Reroute (when a browser result isn't good enough) and default **video**: the **OpenRouter API** via media-gen's `openrouter.py`; key is `OPENROUTER_API_KEY` in `ai-brain/.env`. Don't substitute stock or searched assets for a
+illustration, or video, use the **media-gen** skill (**Codex** image generation via `codex_image.py`, ChatGPT subscription; ChatGPT in Chrome as fallback) — generate **one asset at a time**. Default **video**: the **OpenRouter API** via `openrouter.py`; key is `OPENROUTER_API_KEY` in `ai-brain/.env`. Don't substitute stock or searched assets for a
 generation request. For pixel art / sprites use the **pixel-art** skill (Opus-direct by default,
-ChatGPT on request; reuse the saved style .md for consistency).
+Codex on request; reuse the saved style .md for consistency).
 
 For **icons**: deliver them **dark on a transparent background by default** (knock out the bg, no
 recolor). Recolor only when asked — **solid** in the named color, **gradient** only if "gradient" is

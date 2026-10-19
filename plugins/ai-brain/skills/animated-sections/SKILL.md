@@ -88,6 +88,6 @@ or preview URLs, follow those for the build; this skill still supplies routing, 
 ## Siblings
 
 - `ai-brain:stop-animation` — object transformations as scroll/loop/hover frame sequences.
-- `ai-brain:media-gen` — images, icons, and video (OpenRouter) assets.
+- `ai-brain:media-gen` — images, icons (Codex reroute), and video (OpenRouter) assets.
 - `ai-brain:site-style` — DESIGN.md: palette, fonts, direction, Motion level.
 - `frontend-design:frontend-design` — new UI and aesthetic direction.

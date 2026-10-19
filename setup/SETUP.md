@@ -78,9 +78,9 @@ marker). Activates from the next session (Claude Code may show a one-time hook-a
 |---|---|---|
 | 1 | **Claude login** | `claude` → sign in (Anthropic). |
 | 2 | **Codex CLI** | `codex login` → OpenAI / ChatGPT. Powers the `codex` plugin. |
-| 3 | **Claude-in-Chrome** | Install the *Claude in Chrome* extension. In a Claude session let it pair (click **Connect** in the extension); name it (e.g. `luka_computer`). Powers `media-gen`. |
-| 4 | **media-gen logins** | Sign in to **chatgpt.com** in that Chrome profile (and **gemini.google.com** if you want Veo video). |
-| 5 | **OpenRouter key** | Create `<ai-brain repo>/.env` containing `OPENROUTER_API_KEY=<your key>` (git-ignored). Used by `media-gen` / `stop-animation` for OpenRouter image/video generation. Keys: openrouter.ai/keys. |
+| 3 | **Claude-in-Chrome** | Install the *Claude in Chrome* extension. In a Claude session let it pair (click **Connect** in the extension); name it (e.g. `luka_computer`). Powers the `media-gen` browser fallback and ChatGPT perception. |
+| 4 | **media-gen logins** | Image generation uses the Codex CLI login (step 2). For the browser fallback, sign in to **chatgpt.com** in that Chrome profile (and **gemini.google.com** if you want Veo video). |
+| 5 | **OpenRouter key** | Create `<ai-brain repo>/.env` containing `OPENROUTER_API_KEY=<your key>` (git-ignored). Used by `media-gen` / `stop-animation` for OpenRouter **video** generation. Image reroute needs a logged-in Codex CLI with `image_generation` (`codex features list`), no key. Keys: openrouter.ai/keys. |
 | 6 | **(optional) claude.ai connectors** | Enable Gmail / Calendar / Drive / Stunden at claude.ai if you use them. |
 | 7 | **Restart your shell** | so `clauded` resolves, then start Claude with `clauded`. |
 

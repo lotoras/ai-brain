@@ -1,6 +1,6 @@
 ---
 name: stop-animation
-description: Use when the user wants a scroll-driven / looping / hover-triggered stop animation of an object transforming, embeddable in an HTML page. Generates 3 AI keyframe stills (ChatGPT, per-keyframe OpenRouter reroute) → a video via the OpenRouter API (browser Veo fallback) → extracts frames → recolors or knocks out the backdrop → emits a canvas-driven HTML snippet. Do NOT use for existing videos or simple image carousels.
+description: Use when the user wants a scroll-driven / looping / hover-triggered stop animation of an object transforming, embeddable in an HTML page. Generates 3 AI keyframe stills (Codex `codex_image.py`, ChatGPT-in-Chrome fallback) → a video via the OpenRouter API (browser Veo fallback) → extracts frames → recolors or knocks out the backdrop → emits a canvas-driven HTML snippet. Do NOT use for existing videos or simple image carousels.
 ---
 
 # stop-animation — AI-generated object-transformation canvas animation
@@ -10,7 +10,7 @@ animation driven by scroll, autoplay loop, or hover/click. Replicates the proven
 **3 state stills → Veo transition video → frame extraction → backdrop treatment → HTML snippet**.
 
 All image and video generation is **delegated to the existing `media-gen` skill** (stills via
-ChatGPT in the browser, with a per-keyframe reroute to OpenRouter; video via the OpenRouter API
+Codex (`codex_image.py`, ChatGPT subscription; ChatGPT in Chrome as fallback); video via the OpenRouter API
 by default, browser Veo at gemini.google.com as fallback). This skill orchestrates; `media-gen` generates.
 
 ## When to use / not use
@@ -126,27 +126,26 @@ garbled. Aim for "faithful & legible," not pixel-identical (Veo always redraws t
 
 ## Phase 2 — Generate 3 stills
 
-Use the **`media-gen` skill**, one asset at a time:
+Use the **`media-gen` skill** (Codex route, `codex_image.py`), one asset per call, never concurrent:
+state 1 plain, then states 2 and 3 with `--ref` state 1 (and any approved states).
 
 1. Generate state 1 (closed/start). Regenerate 1–2× if text is warped or style drifts.
-2. Generate state 2 (mid-transition). Optional if the model infers it well.
-3. Generate state 3 (open/end). **This is the most important still** — it becomes the Veo
+2. Generate state 2 (mid-transition) with `--ref` state 1. Optional if the model infers it well.
+3. Generate state 3 with `--ref` the approved states (open/end). **This is the most important still** — it becomes the Veo
    end-image and the reduced-motion fallback.
 
 Downloads follow the `media-gen` skill (§Download robust method). Copy into the run folder:
 `./stop-animation/<slug>/states/`.
 
-**Per-keyframe reroute:** if the user rejects a ChatGPT still, reroute **that keyframe only** to
-OpenRouter (see `media-gen` §OpenRouter route) with the same prompt, passing the already-approved
-states as `--ref` to keep the LOCKED STYLE consistent. Follow the `media-gen` cost gate: run
-WITHOUT `--yes` first (dry run), show the user the estimate, and re-run with `--yes` only after they
-approve:
+**Per-keyframe reroute:** if the user rejects a still, regenerate **that keyframe only** via
+Codex (see `media-gen` §Codex route; ChatGPT subscription, no credits, no dry run or cost gate) with
+the same prompt, passing the already-approved states as `--ref` to keep the LOCKED STYLE consistent.
+(ChatGPT in Chrome is the fallback if Codex fails; OpenRouter images only if the user explicitly says "use OpenRouter".)
 ```powershell
-python "${CLAUDE_PLUGIN_ROOT}\skills\media-gen\scripts\openrouter.py" image `
+python "${CLAUDE_PLUGIN_ROOT}\skills\media-gen\scripts\codex_image.py" `
   --prompt-file "./stop-animation/<slug>/_raw/state2-prompt.txt" `
   --ref "./stop-animation/<slug>/states/state1.png" `
-  --out "./stop-animation/<slug>/states/state2.png" `
-  --yes   # only after the user approved the dry-run estimate
+  --out "./stop-animation/<slug>/states/state2.png"
 ```
 
 **CHECKPOINT 1 — user approves all 3 stills before proceeding.**
@@ -158,8 +157,8 @@ Regenerate on: warped typography, style drift between states, heavy CGI look, wr
 
 Default: **OpenRouter API** (no browser, no manual attachments).
 
-**Before generating, give the user a whole-run estimate:** rerouted stills cost about $0.04 each;
-the video is per the dry run (veo-3.1 4s 1080p without audio ≈ $0.80; veo-3.1-fast ≈ $0.40).
+**Before generating, give the user a whole-run estimate:** rerouted stills cost $0 (Codex, subscription);
+only the video is billed, per the dry run (veo-3.1 4s 1080p without audio ≈ $0.80; veo-3.1-fast ≈ $0.40).
 
 1. Write the video prompt to `./stop-animation/<slug>/_raw/video-prompt.txt`.
 2. Run `openrouter.py models --kind video` once to confirm the model supports `last_frame` and
@@ -289,6 +288,6 @@ and `python -m http.server`.
 
 - `animated-sections` — code-built motion: banners, text effects, scroll-driven UI; routes object
   transformations here.
-- `media-gen` — all image and video generation (ChatGPT stills / OpenRouter reroute and video via
+- `media-gen` — all image and video generation (Codex stills via `scripts/codex_image.py`, ChatGPT-in-Chrome fallback; video via
   `scripts/openrouter.py` / browser Veo fallback).
 - `recolor-icons` — background knockout for single icons (simpler, no video pipeline).

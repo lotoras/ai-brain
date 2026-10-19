@@ -30,7 +30,7 @@ Use the returned line as the role. If the agent returns nothing useful, infer th
 
 If the raw task is about **generating / creating an image, picture, icon, logo, illustration, or
 video** — or clearly trends that direction — the enhanced **Task** must explicitly instruct Claude
-Code to **use the `media-gen` skill** (browser → ChatGPT, generating **one asset at
+Code to **use the `media-gen` skill** (Codex image generation via `codex_image.py`, ChatGPT in Chrome as fallback, generating **one asset at
 a time**). For **icons**, the Task must also name the **`recolor-icons`** step and its default:
 deliver the icon **dark on transparent** unless a color is requested (solid if a color is named,
 gradient only if "gradient" is said; ask which color if "recolor" is said with none). For **pixel art / sprite / tileset** tasks, name the `pixel-art` skill instead. For **animated

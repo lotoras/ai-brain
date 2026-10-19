@@ -1,6 +1,6 @@
 ---
 name: threebrain
-description: Use whenever the user's request matches a Three Model Brain trigger — Codex for test-writing (planned work, only when the user says "use codex") and phrase- or Stop-hook-triggered review/adversarial/rescue, ChatGPT (in-browser) for video/audio/YouTube perception, media-gen for finished image/icon/video assets, the pixel-art skill for pixel art / sprites / tilesets, or any edit touching src/auth/**, **/migrations/**, **/billing/**. Silently routes the task to the right brain; otherwise stays asleep and lets Claude answer directly.
+description: Use whenever the user's request matches a Three Model Brain trigger — Codex for test-writing (planned work, only when the user says "use codex") and phrase- or Stop-hook-triggered review/adversarial/rescue, ChatGPT (in-browser) for video/audio/YouTube perception, media-gen (Codex image generation; OpenRouter video) for finished image/icon/video assets, the pixel-art skill for pixel art / sprites / tilesets, or any edit touching src/auth/**, **/migrations/**, **/billing/**. Silently routes the task to the right brain; otherwise stays asleep and lets Claude answer directly.
 ---
 
 # Three Model Brain auto-router
@@ -10,7 +10,7 @@ You are Claude in a workspace where delegate models are wired in:
 - **Codex (`gpt-6-astra` @ high for review / adversarial / rescue; `gpt-6.1-sol` @ medium for tests (high for risky domains))** via the `codex@openai-codex` plugin — slash commands `/codex:review`, `/codex:adversarial-review`, `/codex:rescue`, `/codex:status`, `/codex:result`, `/codex:cancel`, `/codex:setup`. The default is pinned globally in `~/.codex/config.toml` (`model = "gpt-6-astra"`, `model_reasoning_effort = "high"`; `setup` provisions it from `setup/codex-home/config.toml`); the plugin sends `model: null`, so review, adversarial and rescue inherit it. Test-writing overrides it per call with `--model gpt-6.1-sol --effort medium` (see the Codex pipeline). Never pass the plugin's `spark` alias — it maps to the stale `gpt-5.3-codex-spark`.
   **Invoking Codex from Claude:** `review`, `adversarial-review`, `status`, `result`, `cancel`, `transfer` are user-only slash commands (`disable-model-invocation`) — Claude cannot fire them. From Claude run `node "<plugin>/scripts/codex-companion.mjs" <review|adversarial-review> --scope working-tree` (plugin = `~/.claude/plugins/cache/openai-codex/codex/<version>`) through a Haiku relay that returns stdout verbatim. Rescue and test-writing go through the `codex:codex-rescue` agent.
 - **ChatGPT (in-browser)** — reached through the **claude-in-chrome** MCP at `chatgpt.com` (open a tab, type or upload the request, read the result back). One job: **multimodal perception Claude lacks** — understanding **video, audio, or a YouTube URL** by uploading the file (claude-in-chrome `file_upload`) or pasting the link, then asking. Do **not** use it for code analysis, file review, or large-context *text* work — that stays with Claude (1M context). Creative concepts and inventive website components are Claude's own job — no delegate.
-- **media-gen** (sibling skill) — drives the browser (ChatGPT) to *generate* finished image, icon, and video **assets**. A generation surface, not a reasoning delegate.
+- **media-gen** (sibling skill) — generates finished image/icon assets with **Codex** (`codex_image.py`; ChatGPT in Chrome as fallback) and video via OpenRouter. A generation surface, not a reasoning delegate.
 
 Your job: detect the trigger, fire the right delegate, return its output. Do not announce that you are routing — just do it.
 
@@ -24,7 +24,7 @@ Your job: detect the trigger, fire the right delegate, return its output. Do not
 | "watch this clip / video", "what happens in this video", + a video file or YouTube URL | Upload the video (claude-in-chrome `file_upload`) or paste the URL into **ChatGPT in-browser**, ask, read the answer back |
 | "transcribe / analyze this audio", + an audio file | Upload the audio to **ChatGPT in-browser** and ask |
 | Planned multi-file feature/bugfix (after the plan file exists) **and the user said "use codex"** | Run the **Codex pipeline** below — Codex writes the red tests first (`codex:codex-rescue`). Without the trigger: default all-Claude pipeline, no Codex. Neither pipeline auto-runs Review or Simplify — they run only when the user picks them in the Stop hook (or via the review / sensitive-path triggers above) |
-| "create / generate / make / draw an image, icon, logo, illustration, or video" | Use the **media-gen** skill (browser → ChatGPT) — **one asset at a time** (reroute to the OpenRouter API on request — see media-gen) |
+| "create / generate / make / draw an image, icon, logo, illustration, or video" | Use the **media-gen** skill (Codex image generation; ChatGPT in Chrome as fallback) — **one asset at a time** (OpenRouter = video, or images only on explicit "use OpenRouter" — see media-gen) |
 | "pixel art", "sprite", "tileset", "8-bit / 16-bit" asset | Use the **pixel-art** skill |
 | Edit/write/refactor touching `src/auth/**`, `**/migrations/**`, or `**/billing/**` | **Forced** `/codex:adversarial-review` after the edit, before reporting done |
 | Anything else — including large-context repo scans / "find all uses" | Stay asleep. Let Claude (Opus, 1M context) answer directly, or fire a Codex review if rigor is needed. |
@@ -36,7 +36,7 @@ Your job: detect the trigger, fire the right delegate, return its output. Do not
 3. **ChatGPT is in-browser only.** Reach ChatGPT through the **claude-in-chrome** MCP (`chatgpt.com`), never an API key. Use it for multimodal perception Claude can't do natively (**video / audio / YouTube** — upload the file or paste the link). Creative concepts and inventive components stay with Claude. Code analysis, large-context text scans, and file review stay with Claude/Codex.
 4. **One delegate per task — but sequential Codex handoffs are allowed.** Don't run Codex and ChatGPT in *parallel* on the same request unless the user explicitly asks for both opinions. A *sequential* cross-model check is different and encouraged: when the user opted into the Codex pipeline ("use codex") for planned work, Codex has exactly **one** pipeline touchpoint — writing the red tests before implementation (Codex writes tests → Claude implements). Without that opt-in, planned work uses no Codex. A Codex review is **never** a pipeline phase: it fires **only on a trigger** — a review phrase ("review this", "tear this apart"), the sensitive-path rule (#1), or the user's choice in the `threebrain-after-task` Stop hook (Review / Review + Simplify) — never automatically on every diff.
 5. **Silent operation.** Don't preface with "routing to Codex…" — just call the slash command / open the browser. The user reads the delegate's output directly.
-6. **Serialize generation.** Browser work (media-gen and ChatGPT-in-browser) drives one tab — do it **one at a time** (prompt/upload → wait → capture → next), never parallel tabs or a multi-asset sheet.
+6. **Serialize generation.** Codex image runs, and browser work (ChatGPT-in-browser) driving one tab, — do it **one at a time** (prompt/upload → wait → capture → next), never parallel tabs or a multi-asset sheet.
 
 ## Orchestration — best flow across the brains
 
@@ -44,7 +44,7 @@ Your job: detect the trigger, fire the right delegate, return its output. Do not
 - **Claude (you, Opus)** — orchestrator + implementer, and the **large-context brain** (1M-token window): whole-repo reasoning, cross-file traces, and code/text analysis are yours, not a delegate's. Hold the conversation, decide what to delegate, integrate results, own the final action and the user-facing summary — and own **Simplify**, which runs (last, on Opus) only when the user picks it in the Stop hook.
 - **Codex** — the decorrelated checker: **test author** (spec-first, red tests from the plan — only in the opt-in "use codex" pipeline), **reviewer** (review, adversarial review — only on a phrase, sensitive-path, or Stop-hook trigger), and **rescuer** (deep root-cause, a second implementation opinion). Reach for rigor.
 - **ChatGPT (in-browser)** — multimodal perception Claude lacks (video / audio / YouTube). Not a text-reasoning or large-context delegate.
-- **media-gen** — *create* finished image/icon/video assets via browser ChatGPT.
+- **media-gen** — *create* finished image/icon assets via Codex (ChatGPT-in-Chrome fallback) and video via OpenRouter.
 - **pixel-art** — pixel art / sprites / tilesets in a reusable saved style.
 
 **Decision order** (first match wins):

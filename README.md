@@ -8,8 +8,8 @@ A single plugin, **`ai-brain`**, bundling these skills:
 
 | Skill | What it does |
 |---|---|
-| **media-gen** | Generate **images / icons** by driving ChatGPT in Chrome (via the `claude-in-chrome` MCP), then download and post-process; reroute to OpenRouter when a result isn't good enough. **Video** defaults to the OpenRouter API (browser Veo fallback). |
-| **pixel-art** | Generates pixel art in a reusable style. Opus-direct by default, ChatGPT on request; the style is saved as a `.md` for consistency. Also builds looping sprite animations (sprite sheet + frame data). |
+| **media-gen** | Generate **images / icons** with **Codex** (`codex_image.py`, ChatGPT subscription, no browser) and post-process; ChatGPT in Chrome (`claude-in-chrome` MCP) is the fallback. **Video** defaults to the OpenRouter API (browser Veo fallback); OpenRouter images only on an explicit "use OpenRouter". |
+| **pixel-art** | Generates pixel art in a reusable style. Opus-direct by default, Codex on request; the style is saved as a `.md` for consistency. Also builds looping sprite animations (sprite sheet + frame data). |
 | **recolor-icons** | Knock out icon backgrounds and recolor PNGs — icons are delivered **dark on transparent by default**; recolor only on request: **solid** in the named color, **gradient** only if "gradient" is said (Petrol `#006b6e` → mid-green `#a8d680`); "recolor" with no color asks which. Pillow + NumPy. |
 | **site-style** | Base styling for claude.ai/design and the local claude-designs toolkit: a short interview, then a `DESIGN.md` for a whole site or one ready-to-paste prompt for a single artifact. Overrides the generic AI look. |
 | **animated-sections** | Animated banners, hero sections and scroll effects — code via free component registries, video via `stop-animation` / `media-gen`, Lottie for vector animation. |

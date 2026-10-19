@@ -14,8 +14,8 @@ Two engines:
 - **Opus direct (default)** — you block the sprite out of measured shapes (`build.py`), render it
   (`render.py`), check it (`lint.py` + the preview) and fix it. Exact by construction, and
   proportions are planned, not improvised.
-- **GPT** — the `media-gen` skill generates the image in ChatGPT, then `pixelize.py` snaps it to
-  a true grid and palette. Use only when the user names GPT/ChatGPT or the style file says
+- **GPT** — the `media-gen` skill generates the image with Codex (`codex_image.py`), then `pixelize.py` snaps it to
+  a true grid and palette. Use only when the user names GPT/Codex/ChatGPT or the style file says
   `Engine: gpt`. Suggest it (do not switch silently) for scenes larger than about 64 px.
 
 Opus direct can also start from a **reference** (optional, per asset): a generated image is
@@ -52,7 +52,7 @@ pip install pillow numpy
   <slug>-anim.json          frame size, frame count, default frame duration
   <slug>-anim.gif           fixed-speed preview loop
   <slug>-anim-frames.png    contact sheet of all frames for review
-  _raw/                     raw ChatGPT downloads (GPT engine and reference path)
+  _raw/                     raw Codex/ChatGPT outputs (GPT engine and reference path)
 ```
 
 ---
@@ -245,8 +245,8 @@ visual check after two passes — say so and offer it instead of grinding on.
 ### GPT
 
 1. Build the prompt: **subject sentence first**, then the style's fixed prompt prefix.
-2. Generate through the **`media-gen` skill** (ChatGPT), one asset at a time. When the style has
-   reference images, have the user attach one from `./pixel-art/styles/<name>/refs/`.
+2. Generate through the **`media-gen` skill** (Codex), one asset at a time. When the style has
+   reference images, pass one from `./pixel-art/styles/<name>/refs/`.
 3. Save the download to `./pixel-art/_raw/<slug>.png`, then snap it to the grid:
    ```powershell
    python "${CLAUDE_PLUGIN_ROOT}\skills\pixel-art\scripts\pixelize.py" `
@@ -323,7 +323,7 @@ For "animate it", a walk / idle / action loop, or a sprite sheet. `Read`
 
 - **Never resize pixel art with anything but nearest-neighbour**, and only by integer factors.
 - **Image models paint the pixel look, not a grid** — soft blocks and hundreds of stray colours.
-  A raw ChatGPT download is never a deliverable; it always goes through `pixelize.py`.
+  A raw Codex/ChatGPT output is never a deliverable; it always goes through `pixelize.py`.
 - **File dialogs freeze browser automation** — reference images are attached by the user.
 - **Large canvases are slow to draw by hand**: above about 64 px suggest the GPT engine.
 - **Proportions fail when they are improvised.** Never start a character without the written
@@ -345,7 +345,7 @@ For "animate it", a walk / idle / action loop, or a sprite sheet. `Read`
 
 ## Siblings
 
-- `media-gen` — image generation in ChatGPT (used by the GPT engine here).
+- `media-gen` — image generation via Codex (used by the GPT engine here).
 - `recolor-icons` — recolour / knock out the background of existing icons.
 - `stop-animation` — object-transformation canvas animations (not sprite loops; those are
   Step 4b here).

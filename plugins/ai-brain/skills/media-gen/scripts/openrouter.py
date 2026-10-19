@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Generate images / video through the OpenRouter API (stdlib only).
+"""Generate video (default) / images (opt-in) through the OpenRouter API (stdlib only).
+
+Images here only when the user explicitly says "use OpenRouter"; the default image reroute is
+codex_image.py (Codex CLI, ChatGPT subscription, no cost gate). OpenRouter = video by default.
 
     python openrouter.py models --kind image|video
     python openrouter.py image  (--prompt TEXT | --prompt-file F) --out PATH
