@@ -9,12 +9,14 @@
 const assert = require('node:assert');
 const { spawnSync } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
 const HOOK = path.join(__dirname, 'ssh-guard.js');
 
-function run(toolName, toolInput) {
+function run(toolName, toolInput, cwd) {
   const r = spawnSync(process.execPath, [HOOK], {
-    input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: toolName, tool_input: toolInput }),
+    input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: toolName, tool_input: toolInput, cwd: cwd }),
     encoding: 'utf8',
   });
   assert.strictEqual(r.status, 0, 'hook must always exit 0');
@@ -26,6 +28,23 @@ function denied(out) {
 }
 
 const SM = 'C:/laragon/www/secureit-cms-site-manager';
+const OTHER = 'C:/laragon/www/frameshift';
+
+// Throwaway repos outside CMS_ROOTS: a CMS clone, a worktree of it, and an unrelated repo.
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'ssh-guard-'));
+function repo(name, url) {
+  fs.mkdirSync(path.join(TMP, name, '.git'), { recursive: true });
+  fs.mkdirSync(path.join(TMP, name, 'sub'), { recursive: true });
+  fs.writeFileSync(path.join(TMP, name, '.git', 'config'), '[remote "origin"]\r\n\turl = ' + url + '\r\n');
+  return path.join(TMP, name);
+}
+const CLONE = repo('cms-clone', 'https://github.com/SecureIT-Swiss/cms.git');
+const UNRELATED = repo('other', 'https://github.com/SecureIT-Swiss/cms-theme-tools.git');
+const WT = path.join(TMP, 'wt');
+fs.mkdirSync(path.join(CLONE, '.git', 'worktrees', 'wt'), { recursive: true });
+fs.writeFileSync(path.join(CLONE, '.git', 'worktrees', 'wt', 'commondir'), '../..\n');
+fs.mkdirSync(WT);
+fs.writeFileSync(path.join(WT, '.git'), 'gitdir: ' + path.join(CLONE, '.git', 'worktrees', 'wt') + '\n');
 const cases = [
   // Rule a — direct client calls
   ['blocks plink', 'Bash', { command: 'plink -batch forge-host "ls"' }, true],
@@ -60,13 +79,29 @@ const cases = [
   ['allows markdown', 'Write', { file_path: SM + '/.claude/skills/site-pull/SKILL.md', content: 'never call plink directly' }, false],
   ['allows settings deny rules', 'Edit', { file_path: 'C:/Users/x/.claude/settings.json', old_string: 'a', new_string: 'Bash(plink:*)' }, false],
   ['allows unrelated write', 'Write', { file_path: SM + '/app/Foo.php', content: '<?php echo 1;' }, false],
+  // Scope — CMS folders and clones are guarded, everything else is not
+  ['blocks plink in posix cms-local cwd', 'Bash', { command: 'plink -batch host ls' }, true, '/c/laragon/www/cms-local'],
+  ['blocks ssh in cms-local worktree', 'Bash', { command: 'ssh host uptime' }, true, 'C:\\laragon\\www\\cms-local\\.claude\\worktrees\\x'],
+  ['blocks ssh in cms-mcp', 'Bash', { command: 'ssh host uptime' }, true, 'C:/laragon/www/cms-mcp'],
+  ['blocks cd into cms-local from elsewhere', 'Bash', { command: 'cd C:/laragon/www/cms-local && plink host ls' }, true, OTHER],
+  ['blocks posix cd into site manager from elsewhere', 'Bash', { command: 'cd /c/laragon/www/secureit-cms-site-manager; scp a host:b' }, true, OTHER],
+  ['blocks ssh in a CMS clone (remote match)', 'Bash', { command: 'ssh host uptime' }, true, path.join(CLONE, 'sub')],
+  ['blocks ssh in a worktree of a CMS clone', 'Bash', { command: 'ssh host uptime' }, true, WT],
+  ['blocks plink write into cms-local from elsewhere', 'Write', { file_path: 'C:/laragon/www/cms-local/app/Foo.php', content: 'plink' }, true, OTHER],
+  ['allows plink in another project', 'Bash', { command: '"C:\\Program Files\\PuTTY\\plink.exe" -batch -agent -T user@host ls' }, false, OTHER],
+  ['allows ssh in another project', 'Bash', { command: 'ssh -o BatchMode=yes user@host uptime' }, false, OTHER],
+  ['allows scp in another project', 'PowerShell', { command: 'scp a user@host:b' }, false, OTHER],
+  ['allows forge@ in another project', 'Bash', { command: 'plink forge@1.2.3.4 ls' }, false, OTHER],
+  ['allows ssh in a non-CMS repo', 'Bash', { command: 'ssh host uptime' }, false, path.join(UNRELATED, 'sub')],
+  ['allows sibling folder name prefix', 'Bash', { command: 'ssh host uptime' }, false, 'C:/laragon/www/cms-local-old'],
+  ['allows plink write in another project', 'Write', { file_path: OTHER + '/deploy.ps1', content: 'plink -batch host ls' }, false, OTHER],
   // Fail-open / other tools
   ['ignores Read', 'Read', { file_path: 'x' }, false],
 ];
 
 let failed = 0;
-for (const [name, toolName, input, expectDeny] of cases) {
-  const got = denied(run(toolName, input));
+for (const [name, toolName, input, expectDeny, cwd = SM] of cases) {
+  const got = denied(run(toolName, input, cwd));
   if (got !== expectDeny) {
     failed++;
     console.log('FAIL ' + name + ' — expected ' + (expectDeny ? 'deny' : 'allow') + ', got ' + (got ? 'deny' : 'allow'));
@@ -77,5 +112,6 @@ for (const [name, toolName, input, expectDeny] of cases) {
 const r = spawnSync(process.execPath, [HOOK], { input: 'not json', encoding: 'utf8' });
 if (r.status !== 0 || r.stdout.trim() !== '') { failed++; console.log('FAIL garbage stdin must fail open'); } else { console.log('ok   garbage stdin fails open'); }
 
+fs.rmSync(TMP, { recursive: true, force: true });
 console.log(failed ? '\n' + failed + ' failed' : '\nall passed');
 process.exit(failed ? 1 : 0);

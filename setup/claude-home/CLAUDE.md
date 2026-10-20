@@ -26,6 +26,9 @@ Route design tasks to the matching skill (in claude-designs, `site-style` runs i
 
 Rule of thumb: real things changing → video; typographic / geometric / abstract / UI → code. Video routes keep media-gen's cost gate. Creative concepts stay with Claude.
 
+## SSH (any project)
+SSH is blocked only inside the SecureIT CMS folders (cms-local, secureit-cms-site-manager, cms-mcp — the `ssh-guard` hook routes those to `/sitemanager`); everywhere else connect via Pageant with the **ssh-pageant** skill.
+
 ## Handoffs across models
 See the **threebrain** skill for the orchestration model: Codex for review / adversarial / rescue, ChatGPT (in-browser, via claude-in-chrome) for
 video/audio/YouTube perception Claude can't do natively (upload the file or paste the link);

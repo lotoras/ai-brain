@@ -2,11 +2,6 @@
   "permissions": {
     "allow": [],
     "deny": [
-      "Bash(ssh:*)",
-      "Bash(scp:*)",
-      "Bash(plink:*)",
-      "Bash(pscp:*)",
-      "Bash(psftp:*)",
       "Edit(~/.claude/hooks/ssh-guard.js)",
       "Write(~/.claude/hooks/ssh-guard.js)"
     ],
