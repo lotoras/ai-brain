@@ -7,7 +7,7 @@
     {
       "name": "superpowers",
       "description": "Model-aware fork of obra/superpowers — condensed session injection on Fable/Sonnet/Haiku",
-      "version": "5.1.0-fork.2",
+      "version": "5.1.0-fork.3",
       "author": { "name": "lotoras" },
       "source": "./plugins/superpowers",
       "category": "productivity",
@@ -18,7 +18,7 @@
     {
       "name": "ai-brain",
       "description": "Personal toolbox: generate images/icons via Codex (ChatGPT in Chrome as fallback) and video via the OpenRouter API, knock out and recolor icons (dark by default; solid or gradient on request), route review/rescue to Codex and video/audio perception to ChatGPT, enhance prompts, provision the architect/coder/testing agent lineup into any project.",
-      "version": "0.9.8",
+      "version": "0.10.0",
       "author": { "name": "lotoras" },
       "source": "./plugins/ai-brain",
       "category": "productivity",

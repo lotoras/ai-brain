@@ -58,7 +58,14 @@ the `setup-brain` skill runs the script and walks you through the logins.
    writes `statusline-command.js`, `keybindings.json`, `CLAUDE.md`, `commands/dream.md`, and
    `hooks/threebrain-after-task.js`. `settings.json` is **merged** (not overwritten) via
    `merge-settings.js`, so your local keys — notably the `permissions.allow` list — are preserved
-   across re-runs while the curated keys (plugins, marketplaces, hooks) are applied.
+   across re-runs while the curated keys (plugins, marketplaces, hooks) are applied. Retired hooks
+   (`RETIRED_HOOK_COMMANDS` in `merge-settings.js`, currently `fable-edit-guard.js`) are unwired from
+   `settings.json` and their files removed from `~/.claude/hooks/` (backed up first).
+
+### Session policy injection
+A `SessionStart` hook (`~/.claude/hooks/session-model-guard.js`) injects the Workflow tool opt-in into
+every session, plus a short "work in one main loop" policy for Opus, Fable 5 and unknown models
+(Sonnet/Haiku get the opt-in only). Tests: `node claude-home/hooks/session-model-guard.test.js`.
 6. **`clauded` launcher** — PowerShell `$PROFILE` function, `~/.bashrc` alias, and
    `~/.local/bin/clauded.cmd` (all = `claude --dangerously-skip-permissions`).
 

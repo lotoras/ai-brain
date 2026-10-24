@@ -47,12 +47,6 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|NotebookEdit",
-        "hooks": [
-          { "type": "command", "command": "node ~/.claude/hooks/fable-edit-guard.js" }
-        ]
-      },
-      {
         "matcher": "Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit",
         "hooks": [
           { "type": "command", "command": "node ~/.claude/hooks/ssh-guard.js" }

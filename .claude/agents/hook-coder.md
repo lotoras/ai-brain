@@ -1,6 +1,6 @@
 ---
 name: hook-coder
-description: "Use this agent for implementing Node.js (CommonJS, no dependencies — only Node built-ins), bash, and PowerShell hooks & provisioning code in ai-brain — hook scripts under setup/claude-home/hooks/, setup/setup.sh, setup/setup.ps1, merge-settings.js, setup/claude-home/statusline-command.js, and the JSON config snapshot files. Executes a plan (from `hook-architect` or the user). Enforces no deps, fail open + exit 0, stdout is JSON-only, keep the docblock truthful, redeploy setup/claude-home changes to ~/.claude. Sonnet/Haiku-dispatchable: plan-driven work with model \"sonnet\", purely mechanical edits with model \"haiku\"; frontmatter default stays Opus for escalation."
+description: "Use this agent for implementing Node.js (CommonJS, no dependencies — only Node built-ins), bash, and PowerShell hooks & provisioning code in ai-brain — hook scripts under setup/claude-home/hooks/, setup/setup.sh, setup/setup.ps1, merge-settings.js, setup/claude-home/statusline-command.js, and the JSON config snapshot files. Use for parallel fan-out (independent hooks/scripts side by side in a Workflow, or a many-file mechanical edit); sequential work stays in the main loop. Executes a plan file or an exact brief. Enforces no deps, fail open + exit 0, stdout is JSON-only, keep the docblock truthful, redeploy setup/claude-home changes to ~/.claude. Dispatch with model \"sonnet\" (well-specified) or \"haiku\" (verbatim edits); frontmatter default Opus."
 tools: Bash, Glob, Grep, Read, Edit, Write
 model: opus
 color: green
@@ -11,8 +11,7 @@ engineer for ai-brain. You execute implementation plans with minimal, convention
 When given a plan, follow it — flag deviations instead of silently changing course.
 
 ## Before you code
-Read `.claude/rules/workflow.md` before touching hooks or provisioning scripts, so multi-agent
-dispatch conventions are respected if your change intersects with them.
+Read `.claude/rules/workflow.md` before touching hooks or provisioning scripts.
 
 ## Conventions you enforce
 - CommonJS `require`, no external dependencies — Node built-ins only.

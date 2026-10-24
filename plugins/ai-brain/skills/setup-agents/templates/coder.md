@@ -1,6 +1,6 @@
 ---
 name: {{DOMAIN}}-coder
-description: "Use this agent for implementing {{STACK}} {{LAYER_LABEL}} code in {{PROJECT_NAME}} — {{CODE_UNITS}}. Executes a plan (from `{{DOMAIN}}-architect` or the user). Enforces {{KEY_CONVENTIONS_SHORT}}. Sonnet/Haiku-dispatchable: plan-driven work with model \"sonnet\", purely mechanical edits with model \"haiku\"; frontmatter default stays Opus for escalation."
+description: "Use this agent for implementing {{STACK}} {{LAYER_LABEL}} code in {{PROJECT_NAME}} — {{CODE_UNITS}}. Use for parallel fan-out — independent files or layers side by side in a Workflow, or a many-file mechanical edit; sequential work stays in the main loop. Executes a plan file or an exact brief. Enforces {{KEY_CONVENTIONS_SHORT}}. Dispatch with model \"sonnet\" (well-specified) or \"haiku\" (verbatim edits); frontmatter default Opus."
 tools: Bash, Glob, Grep, Read, Edit, Write
 model: opus
 color: {{COLOR}}

@@ -14,7 +14,12 @@
  *                 adds snapshot entries once -> idempotent on re-runs)
  *   - scalars  -> snapshot wins (keeps curated values, e.g. effortLevel)
  * Local-only keys absent from the snapshot are preserved.
+ * Hook commands listed in RETIRED_HOOK_COMMANDS are removed from the result (array
+ * union alone would keep a retired hook wired forever); a hook group left with no
+ * hooks is dropped.
  */
+
+const RETIRED_HOOK_COMMANDS = ['node ~/.claude/hooks/fable-edit-guard.js'];
 
 const fs = require('fs');
 
@@ -60,5 +65,19 @@ if (snapshot === null) {
 }
 const target = readJson(dstPath, {});
 
-const merged = merge(target, snapshot);
+function dropRetiredHooks(settings) {
+  if (!isObject(settings) || !isObject(settings.hooks)) return settings;
+  for (const event of Object.keys(settings.hooks)) {
+    const groups = settings.hooks[event];
+    if (!Array.isArray(groups)) continue;
+    settings.hooks[event] = groups.filter((g) => {
+      if (!isObject(g) || !Array.isArray(g.hooks)) return true;
+      g.hooks = g.hooks.filter((h) => !(isObject(h) && RETIRED_HOOK_COMMANDS.includes(h.command)));
+      return g.hooks.length > 0;
+    });
+  }
+  return settings;
+}
+
+const merged = dropRetiredHooks(merge(target, snapshot));
 fs.writeFileSync(dstPath, JSON.stringify(merged, null, 2) + '\n');

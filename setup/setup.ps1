@@ -154,7 +154,7 @@ else {
 
 # 5) Config copy with backup -------------------------------------------------
 Step "5/7 Config -> ~/.claude (with backup)"
-$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md','hooks/threebrain-after-task.js','hooks/session-model-guard.js','hooks/fable-edit-guard.js','hooks/ssh-guard.js','hooks/noop-agent-guard.js')
+$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md','hooks/threebrain-after-task.js','hooks/session-model-guard.js','hooks/ssh-guard.js','hooks/noop-agent-guard.js')
 $mergeJs = Join-Path $root 'merge-settings.js'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $backup = Join-Path $claudeDir "backup/$stamp"
@@ -181,6 +181,17 @@ foreach($rel in $files){
     Copy-Item $srcF $dstF -Force
     Ok "wrote ~/.claude/$rel"
   }
+}
+# Retired files: back up, then remove (merge-settings.js unwires their hook entries)
+foreach($rel in @('hooks/fable-edit-guard.js')){
+  $dstF = Join-Path $claudeDir $rel
+  if(-not (Test-Path $dstF)){ continue }
+  if($Check){ Would "remove retired ~/.claude/$rel (backup first)"; continue }
+  $b = Join-Path $backup $rel
+  New-Item -ItemType Directory -Force -Path (Split-Path $b) | Out-Null
+  Copy-Item $dstF $b -Force
+  Remove-Item $dstF -Force
+  Ok "removed retired ~/.claude/$rel"
 }
 if(-not $Check -and (Test-Path $backup)){ Info "backed up prior config to $backup" }
 

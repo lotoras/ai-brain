@@ -67,17 +67,17 @@ This keeps Claude as the single point of accountability, sends each task to the 
 
 Trigger ONLY on explicit directives: "use codex", "with codex", "via codex", "run it through codex" (or cc-enhance carrying one into the enhanced prompt). Bare mentions of Codex as subject matter ("tell me about codex", "fix the codex hook", "codex config") are NOT triggers — when in doubt, don't trigger.
 
-**Default (no trigger):** Haiku explore → Opus plan (`.claude/plans/<slug>.md`, acceptance criteria) → `testing-coder` (Sonnet) writes the red tests → Sonnet coders implement (never editing tests) → verify (2 failed fix rounds → Opus coder) → done. Then the Stop hook offers Simplify · Review · Review + Simplify · No. Neither Review nor Simplify is a pipeline phase.
+**Default (no trigger):** one main loop — the session model reads, plans (`.claude/plans/<slug>.md`, acceptance criteria), implements and verifies itself; for planned multi-file work `testing-coder` (Sonnet) first writes the red tests from the plan as black-box verification (never edited by the implementation); 2 failed fix rounds → step back and re-plan. Then the Stop hook offers Simplify · Review · Review + Simplify · No. Neither Review nor Simplify is a pipeline phase.
 
-With the trigger, planned work (multi-file feature or bugfix) is identical except Codex writes the red tests and 2 failed fix rounds go to `/codex:rescue`. Only Claude can orchestrate (skills, hooks, subagents, 1M context); Codex is the decorrelated test author and rescuer. There is no automatic Codex review and no automatic Simplify — the Stop hook's offer is the only trigger for both (its Review option is the Codex review; Review + Simplify = Codex review → Sonnet fixes findings → Opus `/simplify` last).
+With the trigger, planned work (multi-file feature or bugfix) is identical except Codex writes the red tests and 2 failed fix rounds go to `/codex:rescue`. Only Claude can orchestrate (skills, hooks, subagents, 1M context); Codex is the decorrelated test author and rescuer. There is no automatic Codex review and no automatic Simplify — the Stop hook's offer is the only trigger for both (its Review option is the Codex review; Review + Simplify = Codex review → the main loop fixes findings → Opus `/simplify` last).
 
 | # | Phase | Owner | Mechanism |
 |---|---|---|---|
-| 1 | Explore | Claude Haiku | `Explore`, `model: "haiku"` |
-| 2 | Plan | Claude Opus (main thread / architect; Fable-upgradeable) | `.claude/plans/<slug>.md` with acceptance criteria |
+| 1 | Explore | main loop (Haiku `Explore` only for bulky unknown-scope sweeps) | direct reads |
+| 2 | Plan | main loop | `.claude/plans/<slug>.md` with acceptance criteria |
 | 3 | Tests (red) | Codex | dispatch `codex:codex-rescue` with `--model gpt-6.1-sol` and `--effort medium` by default, `--effort high` when the plan touches `src/auth/**`, `**/migrations/**`, `**/billing/**`, concurrency, money/date math, or complex parsing/state machines, and a test-writing brief: read the plan file, write failing tests only, no non-test source edits, return test files + test command + red output |
-| 4 | Implement (green) | Claude Sonnet coders | `<domain>-coder` makes tests pass; if a test looks wrong it flags it, never edits it |
-| 5 | Verify | Claude orchestrator | run suite; 2 failed fix rounds → `/codex:rescue` |
+| 4 | Implement (green) | main loop (`<domain>-coder`s only for independent parallel parts) | makes tests pass; a test that looks wrong is flagged, never edited |
+| 5 | Verify | main loop | run suite; 2 failed fix rounds → `/codex:rescue` |
 | — | After verify | Stop hook | offers Simplify · Review · Review + Simplify · No — nothing runs unless the user picks it |
 
 - **Scope:** the Codex pipeline applies to opted-in planned work. Micro-edits skip phases 2–4 and just get the Stop-hook ask.

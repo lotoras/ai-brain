@@ -245,7 +245,7 @@ function ask(sensitive) {
     'question "Run a threebrain pass over what just changed?") offering exactly these options:',
     '"Simplify" — ' + simplifyPass + ';',
     '"Review" — trigger the Codex review (' + reviewCmd + ') ' + reviewHandoff + ';',
-    '"Review + Simplify" — run the Review first (' + reviewCmd + ', same handoff), then have a coder subagent with model "sonnet" fix the accepted findings, then run Simplify LAST: ' + simplifyPass + ';',
+    '"Review + Simplify" — run the Review first (' + reviewCmd + ', same handoff), then fix the accepted findings yourself in the main loop, then run Simplify LAST: ' + simplifyPass + ';',
     '"No" — skip and stop.',
     sensitive
       ? 'A sensitive path (src/auth/, migrations/, billing/) was changed, so the sensitive-path rule forces adversarial review — recommend "Review" or "Review + Simplify".'

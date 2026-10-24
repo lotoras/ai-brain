@@ -1,58 +1,19 @@
 #!/usr/bin/env bash
 # SessionStart hook for superpowers plugin (ai-brain fork)
-# Model-aware: injects CONDENSED.md on fable/sonnet/haiku, full SKILL.md on opus/unknown.
+# Injects the condensed using-superpowers guidance (CONDENSED.md) on every model.
 
 set -euo pipefail
-
-# Capture stdin (SessionStart JSON may include "model" field)
-input="$(cat 2>/dev/null || true)"
 
 # Determine plugin root directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Extract model from stdin JSON (no jq dependency)
-model_raw="$(printf '%s' "$input" | grep -o '"model"[^,}]*' 2>/dev/null | tr 'A-Z' 'a-z' || true)"
-
-# If not found in stdin, fall back to settings cascade
-if [ -z "$model_raw" ]; then
-  for settings_file in \
-    "${PWD}/.claude/settings.local.json" \
-    "${PWD}/.claude/settings.json" \
-    "${HOME}/.claude/settings.local.json" \
-    "${HOME}/.claude/settings.json"; do
-    if [ -f "$settings_file" ]; then
-      candidate="$(grep -o '"model"[^,}]*' "$settings_file" 2>/dev/null | tr 'A-Z' 'a-z' | head -1 || true)"
-      if [ -n "$candidate" ]; then
-        model_raw="$candidate"
-        break
-      fi
-    fi
-  done
+# Select content file: every model class gets CONDENSED.md (Claude Code already
+# lists skills and loads them on demand); fall back to SKILL.md if it is missing
+content_file="${PLUGIN_ROOT}/skills/using-superpowers/CONDENSED.md"
+if [ ! -f "$content_file" ]; then
+  content_file="${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md"
 fi
-
-# Classify model
-model_class="unknown"
-case "$model_raw" in
-  *fable*)   model_class="fable"   ;;
-  *opus*)    model_class="opus"    ;;
-  *sonnet*)  model_class="sonnet"  ;;
-  *haiku*)   model_class="haiku"   ;;
-esac
-
-# Select content file based on model class
-case "$model_class" in
-  fable|sonnet|haiku)
-    content_file="${PLUGIN_ROOT}/skills/using-superpowers/CONDENSED.md"
-    # Fall back to SKILL.md if CONDENSED.md is missing
-    if [ ! -f "$content_file" ]; then
-      content_file="${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md"
-    fi
-    ;;
-  opus|unknown)
-    content_file="${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md"
-    ;;
-esac
 
 # Check if legacy skills directory exists and build warning
 warning_message=""

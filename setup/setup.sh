@@ -133,7 +133,7 @@ fi
 # 5) Config copy with backup
 step "5/7 Config -> ~/.claude (with backup)"
 STAMP="$(date +%Y%m%d-%H%M%S)"; BK="$CLAUDE_DIR/backup/$STAMP"; MERGE_JS="$ROOT/merge-settings.js"
-for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md hooks/threebrain-after-task.js hooks/session-model-guard.js hooks/fable-edit-guard.js hooks/ssh-guard.js hooks/noop-agent-guard.js; do
+for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md hooks/threebrain-after-task.js hooks/session-model-guard.js hooks/ssh-guard.js hooks/noop-agent-guard.js; do
   src="$SNAP/$rel"; dst="$CLAUDE_DIR/$rel"
   [ -f "$src" ] || { warn "snapshot missing $rel"; continue; }
   if [ $CHECK -eq 1 ]; then
@@ -149,6 +149,12 @@ for rel in settings.json statusline-command.js keybindings.json CLAUDE.md comman
   else
     cp "$src" "$dst"; ok "wrote ~/.claude/$rel"
   fi
+done
+# Retired files: back up, then remove (merge-settings.js unwires their hook entries)
+for rel in hooks/fable-edit-guard.js; do
+  dst="$CLAUDE_DIR/$rel"; [ -f "$dst" ] || continue
+  if [ $CHECK -eq 1 ]; then would "remove retired ~/.claude/$rel (backup first)"; continue; fi
+  mkdir -p "$(dirname "$BK/$rel")"; cp "$dst" "$BK/$rel"; rm -f "$dst"; ok "removed retired ~/.claude/$rel"
 done
 [ $CHECK -eq 0 ] && [ -d "$BK" ] && cyan "backed up prior config to $BK"
 

@@ -4,7 +4,8 @@
  * session-model-guard.js — Claude Code "SessionStart" hook.
  *
  * Fires on every session start (startup, resume, clear, compact) and injects
- * model-specific orchestration policy into the session's additionalContext.
+ * the session's orchestration policy into its additionalContext: one main loop
+ * by default, spawning only for bulky reads, parallel work or black-box checks.
  * For Fable 5 sessions at effort above "medium" on startup/clear, also injects
  * a one-time WARN block prompting the user to confirm the effort level.
  *
@@ -71,34 +72,20 @@ function emit(parts) {
 const WORKFLOW_OPT_IN =
   `SESSION_WORKFLOW_POLICY: The user has explicitly opted into multi-agent orchestration via the` +
   ` Workflow tool for this session — this block is their standing request, stated up front, and it` +
-  ` satisfies the Workflow tool's opt-in requirement on its own. Do not ask "should I run a` +
-  ` workflow?", do not wait for the "ultracode" keyword, and do not treat any default guidance to` +
-  ` avoid workflows unless requested as blocking — the request has already been made here.` +
-  ` Script a workflow (agent() / pipeline() / parallel()) whenever the task fans out: multi-file or` +
-  ` multi-layer features, reviews, audits, security/perf sweeps, migrations, research sweeps,` +
-  ` verify passes over a list of claims. Keep a single Agent dispatch for one-file, one-step,` +
-  ` lookup, or conversational work; nothing trivial gets a workflow, but when in doubt, workflow.` +
-  ` Mandatory: every agent() call carries an explicit agentType or model — stages inherit the` +
-  ` main-loop model when both are omitted, which is never wanted. Exploration, mapping and greps` +
-  ` (locate) → model: "haiku" (fallback model: "sonnet" at low effort only if Haiku is unavailable or` +
-  ` its sweep comes back thin; Haiku effort: low for plain greps, medium for broad mapping);` +
-  ` verify/check passes → model: "haiku", effort: "low"; judgment reads (summarise, audit, compare)` +
-  ` → model: "opus", effort: "low"; well-specified/plan-driven coding and test writing → the named` +
-  ` coder with model: "sonnet" (effort "medium"); purely mechanical, exactly-specified edits` +
-  ` (verbatim find/replace, ID swaps, template copy/sync) → the named coder with model: "haiku"` +
-  ` (effort "medium"), escalating to Sonnet on failed verification; cross-cutting, security,` +
-  ` no-plan or escalated implementation → the named coder on its Opus default; planning, design,` +
-  ` judging and adversarial review → its Opus architect (effort "high", "xhigh" for hard designs).` +
-  ` A stuck Sonnet coder returns Open questions instead of guessing — ask the architect` +
-  ` (SendMessage) or re-dispatch on Opus. Route each role to the cheapest tier that holds quality:` +
-  ` sweep effort before switching model; cheaper workers pay off for well-specified or parallel` +
-  ` work, not for a single dependent chain. Each agent() prompt is a` +
-  ` self-contained brief (objective, exact paths, findings already gathered, constraints, output` +
-  ` format + word cap); pass plan/finding file paths between stages, never pasted bodies. Respect` +
-  ` the session's workflow size guideline (default medium, aim under 15 agents) — prefer depth over` +
-  ` width, and go bigger only when the user asks for scale. Waiting on background agents or a` +
-  ` workflow: end the turn (they notify you) or keep doing independent work — never spawn a` +
-  ` placeholder/no-op agent to fill the wait (the noop-agent-guard hook denies it).`;
+  ` satisfies the Workflow tool's opt-in requirement on its own, so don't ask first or wait for the` +
+  ` "ultracode" keyword. Default to one main loop; use a workflow only for independent parallel work` +
+  ` (multi-concern reviews, research sweeps, many-file mechanical edits). Every agent() call sets` +
+  ` agentType or model (Haiku for sweeps and verbatim edits, Sonnet for well-specified coding, Opus` +
+  ` for judgment) — an unset stage inherits the main-loop model. Waiting on background work: end the` +
+  ` turn (it notifies you); never spawn a placeholder agent (the noop-agent-guard hook denies it).`;
+
+// Main-loop policy for Fable, Opus and unknown sessions.
+const SINGLE_LOOP =
+  `Work in one main loop — read, plan (a .claude/plans/<slug>.md for multi-step work), edit and` +
+  ` verify yourself. Spawn only for bulky reads (Haiku Explore), independent parallel work` +
+  ` (Workflow) or black-box verification (testing-coder red tests, Codex review); project` +
+  ` architect/coder agents are on-demand. Briefs for spawned agents are self-contained; returns are` +
+  ` Result / Files changed / Deviations / Open questions.`;
 
 // Read and parse one JSON file; return null if unreadable or malformed.
 function readJson(filePath) {
@@ -185,8 +172,8 @@ try {
   const rank       = effortRank(effortLevel);
 
   // ── Persistent session state ───────────────────────────────────────────────
-  // Write a state file so other hooks (e.g. fable-edit-guard) can read the
-  // model class for this session without re-resolving settings.
+  // Write a state file so other hooks can read the model class for this session
+  // without re-resolving settings.
   try {
     const stateDir = path.join(os.tmpdir(), 'claude-model-guard');
     fs.mkdirSync(stateDir, { recursive: true });
@@ -239,7 +226,7 @@ try {
     const eff = String(effortLevel);
     parts.push(
       `SESSION_MODEL_GUARD: This session runs on Fable 5 with effortLevel "${eff}" — above the` +
-      ` intended "medium" default for Fable orchestrator sessions. Before doing anything else,` +
+      ` intended "medium" default for Fable sessions. Before doing anything else,` +
       ` ask the user with AskUserQuestion (header "Effort", question "Fable 5 is running at` +
       ` effort ${eff} — keep it?") with options: "Keep ${eff}" and "Switch to medium"` +
       ` (if chosen, tell the user to run /effort medium, then continue at their chosen setting).` +
@@ -250,60 +237,15 @@ try {
 
   // ── POLICY block ───────────────────────────────────────────────────────────
   // Injected on ALL sources (compact/resume lose context and need re-anchoring).
-  if (modelClass === 'fable') {
-    parts.push(
-      `SESSION_MODEL_GUARD policy — Fable 5 session: You are the orchestrator, not the worker.` +
-      ` Never Edit/Write from the main thread — even one-line changes go to a coder subagent;` +
-      ` the sole exception is your own plan file (*.md under .claude/plans/), which you may write` +
-      ` and edit directly.` +
-      ` Delegate: planning/architecture → the project's Opus architect agents; implementation →` +
-      ` named coders — Sonnet (model: "sonnet") for plan-driven/well-specified coding and test writing;` +
-      ` Haiku (model: "haiku") for purely mechanical, exactly-specified edits (verbatim find/replace,` +
-      ` ID swaps, template copy/sync), escalating to Sonnet on failed verification; Opus for` +
-      ` escalation (cross-cutting, security, no plan, or a blocked Sonnet coder); exploration/mapping/multi-file reading → Haiku (Explore, model: "haiku"; effort low for plain greps, medium for broad mapping; fallback Sonnet at low effort only if Haiku is unavailable or its sweep comes back thin);` +
-      ` verify/check passes → Haiku (effort low);` +
-      ` judgment reads (summarise, audit, compare) → Opus at low effort.` +
-      ` Read at most 1–3 targeted files per task yourself (use offset/limit ranges when known;` +
-      ` Grep with head_limit); never pull large tool outputs into the main thread. Every dispatch` +
-      ` brief must be self-contained — subagents never see this chat: objective, exact paths,` +
-      ` findings already gathered, constraints, required output format. Prefer continuing an` +
-      ` existing agent (SendMessage) over respawning a new one. If the session model changes` +
-      ` mid-session, adopt the policy matching the new model. Your value is judgment per token.` +
-      ` Planned work: Sonnet testing-coder tests → Sonnet code → verify (Codex writes the tests only when the user says "use codex"); Simplify and Review run only when the user picks them in the threebrain Stop hook.`
-    );
-  } else if (modelClass === 'opus') {
-    parts.push(
-      `SESSION_MODEL_GUARD policy — Opus session: Keep planning and architecture in the main` +
-      ` thread. Any single-file change, or a small sequential change whose context you already` +
-      ` hold, may be done directly. Delegate to named coders when work fans out across files/layers` +
-      ` or bulky reads would flood the main context — Sonnet (model: "sonnet") for plan-driven/` +
-      `well-specified coding and test writing, Haiku (model: "haiku") for purely mechanical,` +
-      ` exactly-specified edits (verbatim find/replace, ID swaps, template copy/sync) escalating to` +
-      ` Sonnet on failed verification, Opus for escalation (cross-cutting, security, no plan, or a` +
-      ` blocked Sonnet coder); locate sweeps go to Haiku (effort low for plain greps, medium for broad` +
-      ` mapping; Sonnet at low effort only if Haiku is unavailable or its sweep comes back thin),` +
-      ` verify/check passes to Haiku (effort low), judgment reads to Opus at low effort. Route each role to` +
-      ` the cheapest tier that holds quality: sweep effort before switching model; cheaper workers` +
-      ` pay off for well-specified or parallel work, not for a single dependent chain. Briefs self-contained (objective, exact paths, gathered findings, output` +
-      ` format); compact returns; Grep head_limit; ranged reads; continue agents over respawning.` +
-      ` If the session model changes mid-session, adopt the matching policy.` +
-      ` Planned work: Sonnet testing-coder tests → Sonnet code → verify (Codex writes the tests only when the user says "use codex"); Simplify and Review run only when the user picks them in the threebrain Stop hook.`
-    );
+  // Fable and Opus get the same single-loop policy; unknown adds a model note.
+  if (modelClass === 'fable' || modelClass === 'opus') {
+    parts.push(`SESSION_MODEL_GUARD policy — ${modelClass === 'fable' ? 'Fable 5' : 'Opus'} session: ` + SINGLE_LOOP);
   } else {
     // unknown — model set via CLI flag or fresh install
     parts.push(
       `SESSION_MODEL_GUARD: The session model could not be read from settings (started via CLI` +
-      ` flag or fresh install). Identify your model from your system prompt and apply the` +
-      ` matching policy: Fable 5 → strict orchestrator (never edit directly except plan files` +
-      ` under .claude/plans/; delegate planning` +
-      ` to Opus architects, code to named coders, exploration to Haiku; 1–3 targeted reads max).` +
-      ` Opus → plan in the main thread; single-file or small sequential changes may be done` +
-      ` directly (never on Fable); delegate fan-out work to named coders and exploration to Haiku.` +
-      ` Coders: Sonnet (model: "sonnet") for plan-driven/well-specified coding and test writing, Haiku` +
-      ` (model: "haiku") for purely mechanical, exactly-specified edits, Opus for escalation` +
-      ` (cross-cutting, security, no plan, or a blocked Sonnet coder).` +
-      ` If you are Fable 5 and` +
-      ` effort appears above medium, mention it to the user once.`
+      ` flag or fresh install). Whatever the model: ` + SINGLE_LOOP +
+      ` If you are Fable 5 and effort appears above medium, mention it to the user once.`
     );
   }
 

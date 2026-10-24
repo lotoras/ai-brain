@@ -1,6 +1,6 @@
 ---
 name: cc-enhance
-description: Enhance a raw prompt for Claude Code. Auto-infers role from the project (CLAUDE.md / README / docs) via a Haiku sub-agent, then returns a short prompt with Role + sharpened Task. Tuned for Opus — no imposed plan/scope/stop scaffolding. Routes image/video/icon tasks to the media-gen skill. Ends the enhanced Task with the `use ultracode` keyword to arm multi-agent workflows, skipped only for really small tasks. Roles are always senior/expert-level.
+description: Enhance a raw prompt for Claude Code. Auto-infers role from the project (CLAUDE.md / README / docs) via a Haiku sub-agent, then returns a short prompt with Role + sharpened Task. Tuned for Opus — no imposed plan/scope/stop scaffolding. Routes image/video/icon tasks to the media-gen skill. Adds the `use ultracode` keyword only when the task splits into independent parallel parts. Roles are always senior/expert-level.
 argument-hint: [rough description of what you want Claude Code to do]
 ---
 
@@ -38,7 +38,7 @@ banner / hero / section** tasks, the Task names the `animated-sections` skill; f
 transformation / scroll stop-motion** tasks, it names `stop-animation`. Bake this into
 the prompt text — do not add commentary outside the single output block.
 
-## Step 1.6 — Fable upgrade (model routing)
+## Step 1.6 — Fable review (model routing)
 
 Trigger ONLY on explicit directives: "use fable", "with fable", "on fable", "run architects on
 fable", "run the architects on fable". Bare mentions of "fable" or "Fable 5" as subject matter
@@ -48,13 +48,12 @@ trigger.
 If the user's raw prompt contains one of those explicit directives, the enhanced **Task** must END
 with exactly this instruction (consume the trigger words; do not repeat them as task content):
 
-> If this session is NOT running on Fable 5: upgrade all Fable-upgradeable agents for this task —
-> dispatch every architect/planner with `model: "fable"` (dispatch-time override; their frontmatter
-> default is Opus). If this session IS running on Fable 5: keep all architects on Opus — Fable
-> oversight already comes from the session itself; never double-pay. Coders, test writers, test
-> planners, and exploration always keep their default models.
+> If this session is NOT running on Fable 5: once the plan file is written, have one on-demand
+> architect review it with `model: "fable"` (dispatch-time override) and fold its findings into the
+> plan before building. If this session IS running on Fable 5: just work in the main loop — never
+> double-pay. Everything else keeps its default model.
 
-Without a trigger, add nothing — architects run on their Opus default.
+Without a trigger, add nothing.
 
 ## Step 1.7 — Codex pipeline (opt-in)
 
@@ -66,24 +65,22 @@ If the user's raw prompt contains one of those explicit directives, the enhanced
 with exactly this instruction (consume the trigger words; do not repeat them as task content):
 
 > Run this as a Codex pipeline: Codex writes the red tests via the `codex:codex-rescue` agent
-> (`--model gpt-6.1-sol`, `--effort medium` (`high` for auth/billing/migrations/concurrency/complex parsing)) → Sonnet coders implement (never editing tests) → verify
+> (`--model gpt-6.1-sol`, `--effort medium` (`high` for auth/billing/migrations/concurrency/complex parsing)) → the main loop implements (never editing tests) → verify
 > (2 failed fix rounds → `/codex:rescue`) → done. Codex may read the whole project and run the test suite.
 > No automatic review or simplify — leave both to the Stop hook.
 
-Without a trigger, add nothing — planned work runs the default all-Claude pipeline, no Codex.
+Without a trigger, add nothing — planned work stays all-Claude, no Codex.
 If both the Fable and Codex triggers are present, append both blocks (Fable first).
 
-## Step 1.8 — Ultracode keyword (default; skip for really small tasks)
+## Step 1.8 — Ultracode keyword (only for parallel fan-out)
 
-By default, end the enhanced **Task** with the keyword directive `use ultracode` as its final
-sentence: "Use ultracode — orchestrate it as a Workflow and spawn sub-agents." This arms the
-Workflow tool's multi-agent opt-in in the receiving session.
+Add the keyword directive `use ultracode` as the Task's final sentence — "Use ultracode —
+orchestrate the independent parts as a Workflow." — only when the task splits into independent
+parts that can run in parallel (a multi-concern review, a research sweep, a mechanical edit across
+many files or repos). Otherwise omit it: sequential work runs in one main loop. When in doubt, omit
+it. If the raw task explicitly says "ultracode", always include it.
 
-**Skip it only for really small tasks** where orchestration adds nothing — a one-line or
-single-file tweak, a typo or rename, a quick lookup or question, a single command to run. When in
-doubt, include it. If the raw task explicitly says "ultracode", always include it.
-
-Placement: if Step 1.6's Fable-upgrade and/or Step 1.7's Codex instruction is triggered, put that ultracode sentence immediately BEFORE the first such block, so the triggered block(s) still end the Task
+Placement: if Step 1.6's Fable-review and/or Step 1.7's Codex instruction is triggered, put that ultracode sentence immediately BEFORE the first such block, so the triggered block(s) still end the Task
 exactly as Steps 1.6 / 1.7 require.
 If the raw task already contains "ultracode", do not duplicate it — exactly one occurrence.
 
