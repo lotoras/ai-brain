@@ -57,6 +57,7 @@
  *   stdin  = JSON { stop_hook_active, transcript_path, ... }
  *   stdout = JSON { "decision": "block", "reason": "<instruction>" }  -> Claude continues
  *   exit 0 with no stdout                                            -> Claude stops normally
+ *   any unexpected exception                                         -> exit 0 silently (fail open)
  *
  * Anti-loop: two independent guards (stop_hook_active, and the hook's own prior
  * `reason` signature in the transcript). Either one alone terminates.
@@ -65,6 +66,9 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+
+// Fail open: a bug or an odd transcript must never block Claude from stopping.
+process.on('uncaughtException', function () { process.exit(0); });
 
 const MARKER = 'THREEBRAIN_AFTER_TASK';
 // The distinctive opening of the reason ask() plants. We match this signature
@@ -293,6 +297,7 @@ for (let i = lines.length - 1; i >= 0; i--) {
   // edit past it, so stop the lookback and decide on what we've confirmed so far
   // (strict allow-list — never cross a blind spot to grab a stale edit).
   try { msg = JSON.parse(line); } catch (_) { blindSpot = true; break; }
+  if (!msg || typeof msg !== 'object') continue; // a literal null / scalar line carries no record
 
   const content = msg && msg.message && msg.message.content;
 

@@ -200,6 +200,10 @@ test('(j) missing subagent file / missing transcript -> silent', function () {
 
 const AGENT = { subagent_type: 'general-purpose', run_in_background: true, prompt: 'x' };
 
+test('(k) literal null / scalar transcript lines are skipped, not a crash -> edit still blocks', function () {
+  expectBlock(run(fixture([typed('fix it', 0), null, tool('Edit', { file_path: '/app/src/foo.js' }, 1), 42, null])));
+});
+
 test('(n) newest plugin version wins by numeric compare (1.0.10 > 1.0.6)', function () {
   const home = fakeHome(['1.0.6', '1.0.10', 'latest']);
   const reason = expectBlock(run(fixture([typed('fix', 0), tool('Edit', { file_path: '/a.js' }, 1)]), null, home));
