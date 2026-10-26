@@ -1,6 +1,6 @@
 {
   "name": "ai-brain",
-  "version": "0.10.0",
-  "description": "Personal toolbox: media generation, icon brand-recoloring, model routing, prompt enhancement, per-project agent provisioning.",
+  "version": "0.11.0",
+  "description": "Personal toolbox: media generation, icon brand-recoloring, model routing, prompt enhancement, per-project agent provisioning, Laravel + Vue code-health audits.",
   "author": { "name": "lotoras" }
 }

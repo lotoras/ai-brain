@@ -17,8 +17,8 @@
     },
     {
       "name": "ai-brain",
-      "description": "Personal toolbox: generate images/icons via Codex (ChatGPT in Chrome as fallback) and video via the OpenRouter API, knock out and recolor icons (dark by default; solid or gradient on request), route review/rescue to Codex and video/audio perception to ChatGPT, enhance prompts, provision the architect/coder/testing agent lineup into any project.",
-      "version": "0.10.0",
+      "description": "Personal toolbox: generate images/icons via Codex (ChatGPT in Chrome as fallback) and video via the OpenRouter API, knock out and recolor icons (dark by default; solid or gradient on request), route review/rescue to Codex and video/audio perception to ChatGPT, enhance prompts, provision the architect/coder/testing agent lineup into any project, and run code-health audits of Laravel + Vue apps (laravel-vue-audit).",
+      "version": "0.11.0",
       "author": { "name": "lotoras" },
       "source": "./plugins/ai-brain",
       "category": "productivity",
