@@ -56,11 +56,14 @@ the `setup-brain` skill runs the script and walks you through the logins.
    stop-review gate off (`/codex:setup --disable-review-gate`) — it duplicates the pipeline's Review phase.
 5. **Config → `~/.claude`** — backs up any existing files to `~/.claude/backup/<timestamp>/`, then
    writes `statusline-command.js`, `keybindings.json`, `CLAUDE.md`, `commands/dream.md`, and
-   `hooks/threebrain-after-task.js`. `settings.json` is **merged** (not overwritten) via
+   the hooks (`threebrain-after-task.js`, `chat-log.js`, their shared `lib/transcript.js`, and the
+   guards). `settings.json` is **merged** (not overwritten) via
    `merge-settings.js`, so your local keys — notably the `permissions.allow` list — are preserved
    across re-runs while the curated keys (plugins, marketplaces, hooks) are applied. Retired hooks
    (`RETIRED_HOOK_COMMANDS` in `merge-settings.js`, currently `fable-edit-guard.js`) are unwired from
    `settings.json` and their files removed from `~/.claude/hooks/` (backed up first).
+   Finally it clones the private chat-log repo (`lotoras/claude-chat-log`, override with
+   `CHAT_LOG_REPO`) into `~/.claude/chat-log`, or fast-forwards an existing clone.
 
 ### Session policy injection
 A `SessionStart` hook (`~/.claude/hooks/session-model-guard.js`) injects the Workflow tool opt-in into
@@ -79,6 +82,16 @@ last) · **No**. It also counts edits made by subagents and `codex:codex-rescue`
 allow-list — it stays silent on read-only / Q&A tasks **and** whenever it can't inspect history
 (no/unreadable transcript) — and guards against re-prompting loops (`stop_hook_active` + a transcript
 marker). Activates from the next session (Claude Code may show a one-time hook-approval prompt).
+
+### Chat log (cross-device, AI-searchable)
+A second `Stop` hook (`~/.claude/hooks/chat-log.js`) writes every **code-changing** turn into
+`~/.claude/chat-log/<YYYY>/<MM>/<DD>/<project>--<session8>.md`: the time, prompt, Claude's final reply,
+the changed files, and the repo branch @ commit. Each turn is one upserted block, so a threebrain
+continuation updates the same entry. Common secret shapes are redacted. The hook never blocks; it
+commits, pulls and pushes in a detached background process, and offline commits are pushed on the
+next sync. Ask "did I do this before?" in any session and the `chat-log` skill pulls and greps the
+clone. Without a clone the hook does nothing. Env: `CHAT_LOG_DEVICE` (default: hostname). Tests:
+`node claude-home/hooks/chat-log.test.js`.
 
 ### No placeholder agents
 A `PreToolUse` hook on `Agent|Task` (`~/.claude/hooks/noop-agent-guard.js`) denies do-nothing agent
@@ -100,8 +113,9 @@ claude-home/hooks/noop-agent-guard.test.js`.
 | 3 | **Claude-in-Chrome** | Install the *Claude in Chrome* extension. In a Claude session let it pair (click **Connect** in the extension); name it (e.g. `luka_computer`). Powers the `media-gen` browser fallback and ChatGPT perception. |
 | 4 | **media-gen logins** | Image generation uses the Codex CLI login (step 2). For the browser fallback, sign in to **chatgpt.com** in that Chrome profile (and **gemini.google.com** if you want Veo video). |
 | 5 | **OpenRouter key** | Create `<ai-brain repo>/.env` containing `OPENROUTER_API_KEY=<your key>` (git-ignored). Used by `media-gen` / `stop-animation` for OpenRouter **video** generation. Image reroute needs a logged-in Codex CLI with `image_generation` (`codex features list`), no key. Keys: openrouter.ai/keys. |
-| 6 | **(optional) claude.ai connectors** | Enable Gmail / Calendar / Drive / Stunden at claude.ai if you use them. |
-| 7 | **Restart your shell** | so `clauded` resolves, then start Claude with `clauded`. |
+| 6 | **Chat log auth** | `gh auth login` (or any git credential for github.com) so `~/.claude/chat-log` can clone and push; re-run setup if the clone failed. Optional: connect `lotoras/claude-chat-log` to a claude.ai Project to ask about it from mobile. |
+| 7 | **(optional) claude.ai connectors** | Enable Gmail / Calendar / Drive / Stunden at claude.ai if you use them. |
+| 8 | **Restart your shell** | so `clauded` resolves, then start Claude with `clauded`. |
 
 ## Verify
 - `claude plugin list` → the 4 user plugins enabled.

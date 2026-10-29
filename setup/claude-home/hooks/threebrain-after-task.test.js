@@ -200,8 +200,16 @@ test('(j) missing subagent file / missing transcript -> silent', function () {
 
 const AGENT = { subagent_type: 'general-purpose', run_in_background: true, prompt: 'x' };
 
-test('(k) literal null / scalar transcript lines are skipped, not a crash -> edit still blocks', function () {
+test('(k) literal null / scalar transcript lines are skipped (edit still blocks); garbage stdin -> exit 0, silent', function () {
   expectBlock(run(fixture([typed('fix it', 0), null, tool('Edit', { file_path: '/app/src/foo.js' }, 1), 42, null])));
+  ['not json', 'null', '{"transcript_path":{}}'].forEach(function (raw) {
+    const h = fakeHome();
+    const r = spawnSync(process.execPath, [HOOK], {
+      input: raw, encoding: 'utf8', env: Object.assign({}, process.env, { HOME: h, USERPROFILE: h })
+    });
+    assert.strictEqual(r.status, 0, raw + ': ' + r.stderr);
+    expectSilent(r.stdout);
+  });
 });
 
 test('(n) newest plugin version wins by numeric compare (1.0.10 > 1.0.6)', function () {

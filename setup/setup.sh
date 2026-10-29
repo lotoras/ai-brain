@@ -133,7 +133,7 @@ fi
 # 5) Config copy with backup
 step "5/7 Config -> ~/.claude (with backup)"
 STAMP="$(date +%Y%m%d-%H%M%S)"; BK="$CLAUDE_DIR/backup/$STAMP"; MERGE_JS="$ROOT/merge-settings.js"
-for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md hooks/threebrain-after-task.js hooks/session-model-guard.js hooks/ssh-guard.js hooks/noop-agent-guard.js; do
+for rel in settings.json statusline-command.js keybindings.json CLAUDE.md commands/dream.md hooks/threebrain-after-task.js hooks/session-model-guard.js hooks/ssh-guard.js hooks/noop-agent-guard.js hooks/chat-log.js hooks/lib/transcript.js; do
   src="$SNAP/$rel"; dst="$CLAUDE_DIR/$rel"
   [ -f "$src" ] || { warn "snapshot missing $rel"; continue; }
   if [ $CHECK -eq 1 ]; then
@@ -157,6 +157,15 @@ for rel in hooks/fable-edit-guard.js; do
   mkdir -p "$(dirname "$BK/$rel")"; cp "$dst" "$BK/$rel"; rm -f "$dst"; ok "removed retired ~/.claude/$rel"
 done
 [ $CHECK -eq 0 ] && [ -d "$BK" ] && cyan "backed up prior config to $BK"
+# Chat log: local clone of the private log repo (chat-log Stop hook writes, chat-log skill reads)
+CHAT_LOG_REPO="${CHAT_LOG_REPO:-https://github.com/lotoras/claude-chat-log.git}"; CHAT_LOG_DIR="$CLAUDE_DIR/chat-log"
+if [ $CHECK -eq 1 ]; then
+  if [ -d "$CHAT_LOG_DIR/.git" ]; then would "git pull --ff-only ~/.claude/chat-log"; else would "git clone $CHAT_LOG_REPO -> ~/.claude/chat-log"; fi
+elif [ -d "$CHAT_LOG_DIR/.git" ]; then
+  git -C "$CHAT_LOG_DIR" pull --ff-only -q && ok "chat-log: pulled ~/.claude/chat-log" || warn "chat-log: pull failed - the hook keeps logging locally"
+else
+  git clone -q "$CHAT_LOG_REPO" "$CHAT_LOG_DIR" && ok "chat-log: cloned into ~/.claude/chat-log" || warn "chat-log: clone failed (run 'gh auth login', then re-run setup) - logging stays off until the clone exists"
+fi
 
 # 6) clauded launcher
 step "6/7 clauded launcher (bypass-permissions)"
@@ -192,6 +201,8 @@ cat <<'CHK'
   3. Claude-in-Chrome:  install the 'Claude in Chrome' extension, then let it pair in a Claude session (click Connect); name it (e.g. luka_computer).
   4. media-gen logins:  sign in to chatgpt.com in that Chrome profile (and gemini.google.com if you want Veo video).
   5. (optional) Enable claude.ai connectors (Gmail/Calendar/Drive/Stunden) at claude.ai.
-  6. Restart your shell so 'clauded' resolves, then start Claude with:  clauded
+  6. Chat log:         run 'gh auth login' so ~/.claude/chat-log can clone/push (re-run setup if the clone failed);
+                        optional: connect lotoras/claude-chat-log to a claude.ai Project to ask about it on mobile.
+  7. Restart your shell so 'clauded' resolves, then start Claude with:  clauded
 CHK
 printf '\033[32mDone.\033[0m\n'

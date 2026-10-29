@@ -10,8 +10,8 @@
  * case it stays silent: read-only / Q&A tasks AND any case where history can't be
  * inspected (no/unreadable transcript). Strict allow-list — when in doubt, silent.
  *
- * Order: "Review + Simplify" runs the Review first, has a Sonnet coder fix the
- * accepted findings, and runs Simplify LAST (so the final code is the simplified one).
+ * Order: "Review + Simplify" runs the Review first, fixes the accepted findings in the
+ * main loop, and runs Simplify LAST (so the final code is the simplified one).
  *
  * Sensitive paths: the file_path / notebook_path of every mutating tool_use is
  * collected. If any matches src/auth/, /migrations/ or /billing/ (also at the path
@@ -52,6 +52,8 @@
  *   "hooks": { "Stop": [ { "hooks": [
  *     { "type": "command", "command": "node ~/.claude/hooks/threebrain-after-task.js" }
  *   ] } ] }
+ * The transcript helpers (subagent paths/scans, typed-turn test) live in
+ * ~/.claude/hooks/lib/transcript.js, shared with chat-log.js; a missing lib fails open.
  *
  * Contract (Stop hook):
  *   stdin  = JSON { stop_hook_active, transcript_path, ... }
@@ -70,17 +72,20 @@ const path = require('path');
 // Fail open: a bug or an odd transcript must never block Claude from stopping.
 process.on('uncaughtException', function () { process.exit(0); });
 
+// Shared transcript helpers (required after the handler, so a missing lib fails open).
+const {
+  MUTATING_TOOLS, SAFE_AGENT_ID, textOf, isTypedTurn, collectPaths,
+  subagentPath, notifiedAgentIds, scanSubagent
+} = require(path.join(__dirname, 'lib', 'transcript.js'));
+
 const MARKER = 'THREEBRAIN_AFTER_TASK';
 // The distinctive opening of the reason ask() plants. We match this signature
 // (not the bare MARKER) so prose or code that merely mentions the marker — e.g.
 // a tool_result echoing this file, or a message discussing the hook — can't be
 // mistaken for the hook's own prior prompt and wrongly suppress a fresh one.
 const REASON_SIGNATURE = MARKER + ': This task changed code';
-const MUTATING_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 // Paths whose changes force the adversarial Codex review (matched on `/`-normalised paths).
 const SENSITIVE_PATH = /(^|\/)(src\/auth|migrations|billing)\//i;
-// Agent ids end up in a file name: accept only plain id characters (no path separators).
-const SAFE_AGENT_ID = /^[A-Za-z0-9_.-]+$/;
 // An unfinished agent whose transcript is older than this is presumed crashed/killed.
 const STALE_MS = 30 * 60 * 1000;
 
@@ -99,37 +104,6 @@ function isHookReason(content) {
     });
   }
   return false;
-}
-
-// The record's plain text: the string content, or all text blocks joined.
-function textOf(content) {
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) {
-    return content.map(function (p) {
-      return p && p.type === 'text' && typeof p.text === 'string' ? p.text : '';
-    }).join('\n');
-  }
-  return '';
-}
-
-// Record a mutating tool_use's target path (file_path, or notebook_path for NotebookEdit).
-function collectPaths(part, paths) {
-  const inp = part.input || {};
-  [inp.file_path, inp.notebook_path].forEach(function (p) {
-    if (typeof p === 'string' && p) paths.push(p.replace(/\\/g, '/'));
-  });
-}
-
-// <dir of transcript>/<session>/subagents/<name>
-function subagentPath(tpath, name) {
-  return path.join(path.dirname(tpath), path.basename(tpath, '.jsonl'), 'subagents', name);
-}
-
-// True only for a real subagent: it has an agent-<id>.meta.json next to its transcript.
-// Background Bash tasks also emit <task-notification>/<task-id> but have no such file.
-function isAgent(tpath, id) {
-  try { return SAFE_AGENT_ID.test(id) && fs.existsSync(subagentPath(tpath, 'agent-' + id + '.meta.json')); }
-  catch (_) { return false; }
 }
 
 // Ids of this session's subagents still running: meta has no `finished: true` and the transcript
@@ -179,34 +153,6 @@ function writeDeferred(tpath, changed, sensitive, ids, since) {
 }
 function clearDeferred(tpath) {
   try { fs.unlinkSync(deferredPath(tpath)); } catch (_) { /* none to delete */ }
-}
-
-// Read one subagent transcript and report its mutating tool_use at/after `since`
-// (ms epoch; NaN = no boundary, count all). Missing/unreadable file -> nothing.
-function scanSubagent(tpath, agentId, since, paths) {
-  let found = false;
-  try {
-    const file = subagentPath(tpath, 'agent-' + agentId + '.jsonl');
-    const lines = fs.readFileSync(file, 'utf8').split('\n');
-    for (const line of lines) {
-      if (!line || !line.trim()) continue;
-      let rec;
-      try { rec = JSON.parse(line); } catch (_) { continue; }
-      const c = rec && rec.message && rec.message.content;
-      if (!rec || rec.type !== 'assistant' || !Array.isArray(c)) continue;
-      if (!isNaN(since)) {
-        const t = Date.parse(rec.timestamp);
-        if (isNaN(t) || t < since) continue; // unknowable age -> don't count (allow-list)
-      }
-      for (const part of c) {
-        if (part && part.type === 'tool_use' && MUTATING_TOOLS.has(part.name)) {
-          found = true;
-          collectPaths(part, paths);
-        }
-      }
-    }
-  } catch (_) { /* missing subagent file: nothing to add */ }
-  return found;
 }
 
 // Numeric dotted compare of two version-ish names (1.0.10 > 1.0.6). A non-numeric
@@ -330,20 +276,11 @@ for (let i = lines.length - 1; i >= 0; i--) {
     // An async agent finishing: not a typed turn, so keep walking past it.
     const text = textOf(content);
     if (text.indexOf('<task-notification>') !== -1) {
-      const re = /<task-id>([^<]+)<\/task-id>/g;
-      let m;
-      while ((m = re.exec(text)) !== null) {
-        const id = m[1].trim();
-        if (isAgent(tp, id)) agentIds.add(id); // not a background Bash task
-      }
+      notifiedAgentIds(tp, text).forEach(function (id) { agentIds.add(id); }); // not Bash tasks
       continue;
     }
     // A genuine typed user turn ends the lookback at the current turn boundary.
-    // That's plain-string content, or an array carrying real text (e.g. a message
-    // with an attachment) — but NOT an array of only tool_result blocks.
-    const typedTurn = typeof content === 'string'
-      || (Array.isArray(content) && content.some(function (p) { return p && p.type === 'text'; }));
-    if (typedTurn) { boundaryTs = Date.parse(msg.timestamp); break; }
+    if (isTypedTurn(content)) { boundaryTs = Date.parse(msg.timestamp); break; }
   }
 }
 

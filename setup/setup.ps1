@@ -154,7 +154,7 @@ else {
 
 # 5) Config copy with backup -------------------------------------------------
 Step "5/7 Config -> ~/.claude (with backup)"
-$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md','hooks/threebrain-after-task.js','hooks/session-model-guard.js','hooks/ssh-guard.js','hooks/noop-agent-guard.js')
+$files = @('settings.json','statusline-command.js','keybindings.json','CLAUDE.md','commands/dream.md','hooks/threebrain-after-task.js','hooks/session-model-guard.js','hooks/ssh-guard.js','hooks/noop-agent-guard.js','hooks/chat-log.js','hooks/lib/transcript.js')
 $mergeJs = Join-Path $root 'merge-settings.js'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $backup = Join-Path $claudeDir "backup/$stamp"
@@ -194,6 +194,18 @@ foreach($rel in @('hooks/fable-edit-guard.js')){
   Ok "removed retired ~/.claude/$rel"
 }
 if(-not $Check -and (Test-Path $backup)){ Info "backed up prior config to $backup" }
+# Chat log: local clone of the private log repo (chat-log Stop hook writes, chat-log skill reads)
+$chatLogRepo = if($env:CHAT_LOG_REPO){ $env:CHAT_LOG_REPO } else { 'https://github.com/lotoras/claude-chat-log.git' }
+$chatLogDir = Join-Path $claudeDir 'chat-log'
+if($Check){
+  if(Test-Path (Join-Path $chatLogDir '.git')){ Would "git pull --ff-only ~/.claude/chat-log" } else { Would "git clone $chatLogRepo -> ~/.claude/chat-log" }
+} elseif(Test-Path (Join-Path $chatLogDir '.git')){
+  git -C $chatLogDir pull --ff-only -q
+  if($LASTEXITCODE -eq 0){ Ok "chat-log: pulled ~/.claude/chat-log" } else { Warn "chat-log: pull failed - the hook keeps logging locally" }
+} else {
+  git clone -q $chatLogRepo $chatLogDir
+  if($LASTEXITCODE -eq 0){ Ok "chat-log: cloned into ~/.claude/chat-log" } else { Warn "chat-log: clone failed (run 'gh auth login', then re-run setup) - logging stays off until the clone exists" }
+}
 
 # 6) clauded launcher --------------------------------------------------------
 Step "6/7 clauded launcher (bypass-permissions)"
@@ -238,7 +250,8 @@ Write-Host "`n== Manual steps (guided auth - nothing stored) ==" -ForegroundColo
   "3. Claude-in-Chrome:  install the 'Claude in Chrome' extension, then let it pair in a Claude session (click Connect); name it (e.g. luka_computer).",
   "4. media-gen logins:  sign in to chatgpt.com in that Chrome profile (and gemini.google.com if you want Veo video).",
   "5. (optional) Enable claude.ai connectors (Gmail/Calendar/Drive/Stunden) at claude.ai.",
-  "6. Restart your shell so 'clauded' resolves, then start Claude with:  clauded"
+  "6. Chat log:         run 'gh auth login' so ~/.claude/chat-log can clone/push (re-run setup if the clone failed); optional: connect lotoras/claude-chat-log to a claude.ai Project to ask about it on mobile.",
+  "7. Restart your shell so 'clauded' resolves, then start Claude with:  clauded"
 ) | ForEach-Object { Write-Host "  $_" }
 
 Write-Host "`nDone." -ForegroundColor Green

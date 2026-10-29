@@ -31,6 +31,11 @@ substitute stock or searched assets. Icons: dark on transparent unless a color i
 changing → video; typographic / geometric / UI → code. Verify UI with claude-in-chrome screenshots
 at 1440 and 390 + console.
 
+## Chat log (any project)
+The `chat-log` Stop hook logs every code-changing turn (prompt, result, files, repo @ commit) to
+`~/.claude/chat-log`, a clone of the private repo `lotoras/claude-chat-log` synced across devices.
+For "did I do this before / remember when I… / do it like I did there", use the **chat-log** skill.
+
 ## SSH (any project)
 SSH is blocked only inside the SecureIT CMS folders (cms-local, secureit-cms-site-manager, cms-mcp — the `ssh-guard` hook routes those to `/sitemanager`); everywhere else connect via Pageant with the **ssh-pageant** skill.
 

@@ -35,6 +35,11 @@
         "hooks": [
           { "type": "command", "command": "node ~/.claude/hooks/threebrain-after-task.js" }
         ]
+      },
+      {
+        "hooks": [
+          { "type": "command", "command": "node ~/.claude/hooks/chat-log.js" }
+        ]
       }
     ],
     "SessionStart": [
