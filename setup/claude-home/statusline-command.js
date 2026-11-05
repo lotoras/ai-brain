@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Claude Code statusline: the "Club" look from the Neon Console design
 // (C:\laragon\www\claude-designs, branch design/neon-console, project/src/neon-statusline.js).
-// Five lines: VU meters for context and both rate limits, a now-playing line, session info,
+// Five lines: VU meters for context and the reported rate limits, a now-playing line, session info,
 // and a disco floor where Clawd dances while the session is busy (prompt-board's blue); otherwise he
 // sleeps on an unlit, still floor. One frame per second (settings.json refreshInterval: 1).
 // Glyphs are limited to what prompt-board renders (Consolas + Segoe UI Symbol). Respects NO_COLOR.
@@ -280,14 +280,15 @@ function withMascot(lines, col, frame, pen, asleep) {
 function club(d, L, t) {
   const W = L.avail;
   const F = L.full;
-  const RACK = 16;                       // " ███  ███  ███  "
-  const C = W - RACK;
-  const beat = !t.asleep && t.frame === BEAT;
   const meters = [
     { label: 'CTX', p: d.ctx, th: WARN.ctx },
     ...d.limits.map((l) => ({ label: l.label, p: l.pct, th: WARN.limit })),
   ];
-  while (meters.length < 3) meters.push({ label: '', p: null, th: WARN.limit });
+  // Only reported windows get a slot: verified Ultra accounts have no 5-hour limit, so no 5H meter.
+  while (meters.length < 2) meters.push({ label: '', p: null, th: WARN.limit });
+  const RACK = 1 + meters.length * 5;    // " ███  ███  "
+  const C = W - RACK;
+  const beat = !t.asleep && t.frame === BEAT;
 
   // Row 0: meter labels, then ░▒▓ AI·BRAIN ▓▒░ ──── /sub ──── (flashes on the beat)
   let labels = gap(1);
