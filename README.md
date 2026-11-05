@@ -8,7 +8,7 @@ A single plugin, **`ai-brain`**, bundling these skills:
 
 | Skill | What it does |
 |---|---|
-| **media-gen** | Generate **images / icons** with **Codex** (`codex_image.py`, ChatGPT subscription, no browser) and post-process; ChatGPT in Chrome (`claude-in-chrome` MCP) is the fallback. **Video** defaults to the OpenRouter API (browser Veo fallback); OpenRouter images only on an explicit "use OpenRouter". |
+| **media-gen** | Generate **images / icons** with **Codex** (`codex_image.py`, ChatGPT subscription, no browser) and post-process; ChatGPT in Chrome (`claude-in-chrome` MCP) is the fallback, used only when Codex fails or the browser is explicitly asked for ("via ChatGPT" still means Codex). **Video** defaults to the OpenRouter API (browser Veo fallback); OpenRouter images only on an explicit "use OpenRouter". |
 | **pixel-art** | Generates pixel art in a reusable style. Opus-direct by default, Codex on request; the style is saved as a `.md` for consistency. Also builds looping sprite animations (sprite sheet + frame data). |
 | **recolor-icons** | Knock out icon backgrounds and recolor PNGs — icons are delivered **dark on transparent by default**; recolor only on request: **solid** in the named color, **gradient** only if "gradient" is said (Petrol `#006b6e` → mid-green `#a8d680`); "recolor" with no color asks which. Pillow + NumPy. |
 | **site-style** | Base styling for claude.ai/design and the local claude-designs toolkit: a short interview, then a `DESIGN.md` for a whole site or one ready-to-paste prompt for a single artifact. Overrides the generic AI look. |

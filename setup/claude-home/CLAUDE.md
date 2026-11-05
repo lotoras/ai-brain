@@ -27,7 +27,9 @@ section.
 ## Media & design (any project)
 The skills trigger on their own descriptions (media-gen, recolor-icons, pixel-art, site-style,
 frontend-design, animated-sections, stop-animation, dataviz). Generate one asset at a time and never
-substitute stock or searched assets. Icons: dark on transparent unless a color is asked. Real things
+substitute stock or searched assets. "Via ChatGPT" for images means the Codex route (`codex_image.py`,
+same model), not ChatGPT in Chrome; the browser only on explicit ask or after Codex fails twice.
+Icons: dark on transparent unless a color is asked. Real things
 changing → video; typographic / geometric / UI → code. Verify UI with claude-in-chrome screenshots
 at 1440 and 390 + console.
 

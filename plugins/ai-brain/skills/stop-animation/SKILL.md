@@ -140,7 +140,7 @@ Downloads follow the `media-gen` skill (§Download robust method). Copy into the
 **Per-keyframe reroute:** if the user rejects a still, regenerate **that keyframe only** via
 Codex (see `media-gen` §Codex route; ChatGPT subscription, no credits, no dry run or cost gate) with
 the same prompt, passing the already-approved states as `--ref` to keep the LOCKED STYLE consistent.
-(ChatGPT in Chrome is the fallback if Codex fails; OpenRouter images only if the user explicitly says "use OpenRouter".)
+(ChatGPT in Chrome is the fallback if Codex fails, and "via ChatGPT" still means Codex; OpenRouter images only if the user explicitly says "use OpenRouter".)
 ```powershell
 python "${CLAUDE_PLUGIN_ROOT}\skills\media-gen\scripts\codex_image.py" `
   --prompt-file "./stop-animation/<slug>/_raw/state2-prompt.txt" `
