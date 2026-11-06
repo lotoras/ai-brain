@@ -1,3 +1,5 @@
 .env
 .claude/plans/
 .claude/findings/
+__pycache__/
+*.pyc
