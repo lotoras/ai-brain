@@ -24,6 +24,12 @@ The Workflow tool only accepts an opt-in delivered as session context, so `sessi
 injects it as `SESSION_WORKFLOW_POLICY` at every session start. Keep that block in sync with this
 section.
 
+## Admin & system steps (any project)
+Run admin and system steps yourself; I only click the confirm windows. Elevate from your own shell with
+`Start-Process powershell -Verb RunAs -Wait -ArgumentList ...` (log stdout to a scratchpad file and read it back), so Windows
+shows its UAC prompt and I click **Yes**. Never hand me a command to paste into an admin PowerShell, and don't explain
+how to open one. Still preview first where the tool has a dry run, and verify the result yourself afterwards.
+
 ## Media & design (any project)
 The skills trigger on their own descriptions (media-gen, recolor-icons, pixel-art, site-style,
 frontend-design, animated-sections, stop-animation, dataviz). Generate one asset at a time and never
