@@ -108,6 +108,18 @@ if(Test-Path $cfgSrc){
     }
   }
 }
+# Codex global instructions: copy setup/codex-home/AGENTS.md -> ~/.codex/AGENTS.md (the talk style; backup if it differs)
+$agSrc = Join-Path $root 'codex-home/AGENTS.md'
+$agDst = Join-Path $env:USERPROFILE '.codex/AGENTS.md'
+if(Test-Path $agSrc){
+  if($Check){ Would "copy codex-home/AGENTS.md -> ~/.codex/AGENTS.md (backup existing first if it differs)" }
+  elseif((Test-Path $agDst) -and ([System.IO.File]::ReadAllText($agDst) -ceq [System.IO.File]::ReadAllText($agSrc))){ Ok "~/.codex/AGENTS.md already current" }
+  else {
+    if(Test-Path $agDst){ Copy-Item $agDst "$agDst.bak-$(Get-Date -Format 'yyyyMMdd-HHmmss')" -Force; Info "backup kept alongside ~/.codex/AGENTS.md" }
+    else { New-Item -ItemType Directory -Force -Path (Split-Path $agDst) | Out-Null }
+    Copy-Item $agSrc $agDst -Force; Ok "wrote ~/.codex/AGENTS.md (global talk style)"
+  }
+}
 
 # 3) Marketplaces ------------------------------------------------------------
 Step "3/7 Plugin marketplaces"

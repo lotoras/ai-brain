@@ -52,6 +52,7 @@ setup/
   SETUP.md                           # runbook + manual-login guide
   claude-home/                       # config snapshot copied into ~/.claude (no secrets)
   codex-home/config.toml             # Codex model pin, merged into ~/.codex/config.toml
+  codex-home/AGENTS.md               # Codex global talk style, copied to ~/.codex/AGENTS.md
 ```
 
 ## Editing skills

@@ -47,6 +47,9 @@ the `setup-brain` skill runs the script and walks you through the logins.
    (`[windows] sandbox = "unelevated"`) unless a `[windows]` table exists — without it native
    Windows Codex silently downgrades `--write` to read-only, so `codex:codex-rescue` can't write
    tests or fixes. `setup.sh` (macOS/Linux) doesn't need it.
+   Both scripts then copy `setup/codex-home/AGENTS.md` to `~/.codex/AGENTS.md` (Codex's global
+   instructions in every project): the "How to talk to me" style, so Codex review text matches
+   the global CLAUDE.md. An existing file that differs is backed up alongside first.
    Don't use the codex plugin's `spark` alias — it maps to the stale `gpt-5.3-codex-spark`.
 3. **Marketplaces** — adds `anthropics/claude-plugins-official`, `openai/codex-plugin-cc`,
    `lotoras/ai-brain`.

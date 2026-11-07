@@ -42,7 +42,7 @@ Summary points:
 
 | Rung | Piece | Where |
 |---|---|---|
-| Text | "80% of the way to ASD-STE100" for all chat text (~700 B always-on) | global `CLAUDE.md` → "How to talk to me" (`setup/claude-home/CLAUDE.md`) |
+| Text | "80% of the way to ASD-STE100" for all chat text (~700 B always-on) | global `CLAUDE.md` → "How to talk to me" (`setup/claude-home/CLAUDE.md`); same rules in `setup/codex-home/AGENTS.md` (Codex) and in claude.ai → Settings → Your Claude → Instructions (all claude.ai chats) |
 | Diagram + HTML | `explain` skill: build a page when asked, else a one-line offer after long answers | `plugins/ai-brain/skills/explain/SKILL.md` |
 | Diagram + HTML | `ai-brain:explainer` agent: Sonnet at low effort, background, one pass, opens the page in Chrome by itself | `plugins/ai-brain/agents/explainer.md` |
 

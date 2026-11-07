@@ -87,6 +87,17 @@ if [ -f "$CFG_SRC" ]; then
     done
   fi
 fi
+# Codex global instructions: copy setup/codex-home/AGENTS.md -> ~/.codex/AGENTS.md (the talk style; backup if it differs)
+AG_SRC="$ROOT/codex-home/AGENTS.md"; AG_DST="$HOME/.codex/AGENTS.md"
+if [ -f "$AG_SRC" ]; then
+  if [ $CHECK -eq 1 ]; then would "copy codex-home/AGENTS.md -> ~/.codex/AGENTS.md (backup existing first if it differs)"
+  elif [ -f "$AG_DST" ] && cmp -s "$AG_SRC" "$AG_DST"; then ok "~/.codex/AGENTS.md already current"
+  else
+    if [ -f "$AG_DST" ]; then cp "$AG_DST" "$AG_DST.bak-$(date +%Y%m%d-%H%M%S)"; cyan "backup kept alongside ~/.codex/AGENTS.md"
+    else mkdir -p "$(dirname "$AG_DST")"; fi
+    cp "$AG_SRC" "$AG_DST" && ok "wrote ~/.codex/AGENTS.md (global talk style)" || warn "could not write ~/.codex/AGENTS.md"
+  fi
+fi
 
 # 3) Marketplaces
 step "3/7 Plugin marketplaces"
