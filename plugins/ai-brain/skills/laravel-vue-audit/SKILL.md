@@ -1,6 +1,6 @@
 ---
 name: laravel-vue-audit
-description: Code-health audit for Laravel + Vue 3 apps (Inertia, Blade+Vue islands, or Vue Router/Pinia SPA). Finds slow (N+1, missing indexes, heavy bundles), duplicated, broken-wiring, incorrect (money/transactions/races), and non-idiomatic ("not the Laravel/Vue way") code with source-grounded evidence and independent verification. Use for any audit request in a Laravel or Vue project — "audit this", "run an audit", "audit the app / codebase", "code audit", "code-health check", "audit/review this Laravel/Vue app" — and for performance or duplication sweeps, conformance reviews, PR review with --diff, or a requested audit report. Not a security audit: a security-audit request or deep security analysis goes to the security-audit skill.
+description: 'Code-health audit for Laravel + Vue 3 apps (Inertia, Blade+Vue islands, or Vue Router/Pinia SPA). Finds slow (N+1, missing indexes, heavy bundles), duplicated, broken-wiring, incorrect (money/transactions/races), and non-idiomatic ("not the Laravel/Vue way") code with source-grounded evidence and independent verification. Use for any audit request in a Laravel or Vue project — "audit this", "run an audit", "audit the app / codebase", "code audit", "code-health check", "audit/review this Laravel/Vue app" — and for performance or duplication sweeps, conformance reviews, PR review with --diff, or a requested audit report. Not a security audit: a security-audit request or deep security analysis goes to the security-audit skill.'
 ---
 
 # Laravel + Vue Audit

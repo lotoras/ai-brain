@@ -20,7 +20,8 @@
  * Delegated edits: subagent turns are NOT in the main transcript. They live in
  *   <dir of transcript_path>/<transcript basename without .jsonl>/subagents/agent-<agentId>.jsonl
  * so edits made by a subagent are invisible to a main-transcript scan. Within the
- * lookback window (back to the last typed user turn) we therefore collect agentIds
+ * lookback window (back to the last typed user turn; isMeta records such as skill bodies
+ * and Stop-hook feedback are not typed turns) we therefore collect agentIds
  * from (1) `toolUseResult.agentId` on the user record carrying an Agent tool_result,
  * (2) `<task-id>` in `<task-notification>` records (async agents finishing later —
  * such a record is NOT a typed-turn boundary, so the walk continues past it), and
@@ -74,7 +75,7 @@ process.on('uncaughtException', function () { process.exit(0); });
 
 // Shared transcript helpers (required after the handler, so a missing lib fails open).
 const {
-  SAFE_AGENT_ID, textOf, isTypedTurn, projectMutation,
+  SAFE_AGENT_ID, textOf, isPrompt, projectMutation,
   subagentPath, notifiedAgentIds, scanSubagent
 } = require(path.join(__dirname, 'lib', 'transcript.js'));
 
@@ -279,7 +280,8 @@ for (let i = lines.length - 1; i >= 0; i--) {
       continue;
     }
     // A genuine typed user turn ends the lookback at the current turn boundary.
-    if (isTypedTurn(content)) { boundaryTs = Date.parse(msg.timestamp); break; }
+    // isMeta records (skill bodies, Stop-hook feedback) are not typed turns.
+    if (isPrompt(msg)) { boundaryTs = Date.parse(msg.timestamp); break; }
   }
 }
 

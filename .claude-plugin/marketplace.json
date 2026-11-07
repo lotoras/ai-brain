@@ -18,7 +18,7 @@
     {
       "name": "ai-brain",
       "description": "Personal toolbox: generate images/icons via Codex (ChatGPT in Chrome as fallback) and video via the OpenRouter API, knock out and recolor icons (dark by default; solid or gradient on request), route review/rescue to Codex and video/audio perception to ChatGPT, enhance prompts, provision the architect/coder/testing agent lineup into any project, run code-health audits of Laravel + Vue apps (laravel-vue-audit), recall past chat work from the cross-device chat log (chat-log), and explain topics with a diagram or HTML page that a fast Sonnet agent builds and opens in Chrome (explain).",
-      "version": "0.13.1",
+      "version": "0.13.2",
       "author": { "name": "lotoras" },
       "source": "./plugins/ai-brain",
       "category": "productivity",

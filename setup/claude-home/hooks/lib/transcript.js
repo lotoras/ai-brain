@@ -41,6 +41,12 @@ function isTypedTurn(content) {
     || (Array.isArray(content) && content.some(function (p) { return p && p.type === 'text'; }));
 }
 
+// A real user prompt: a non-isMeta user record with typed text. Skill bodies and Stop-hook
+// feedback are isMeta, so they never end a lookback window.
+function isPrompt(rec) {
+  return !!rec && rec.type === 'user' && !rec.isMeta && isTypedTurn(rec.message && rec.message.content);
+}
+
 // A mutating tool_use that touches at least one file outside the scratchpad (a call with no
 // path counts). Pushes its non-scratchpad target paths (file_path / notebook_path, `\` → `/`).
 function projectMutation(part, paths) {
@@ -106,6 +112,6 @@ function scanSubagent(tpath, agentId, since, paths) {
 }
 
 module.exports = {
-  SAFE_AGENT_ID, textOf, isTypedTurn, projectMutation,
+  SAFE_AGENT_ID, textOf, isPrompt, projectMutation,
   subagentPath, isAgent, notifiedAgentIds, scanSubagent
 };

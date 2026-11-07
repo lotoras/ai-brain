@@ -338,6 +338,19 @@ test('(r) scratchpad Write + Edit on src/foo.js -> block, plain review', functio
   assert.ok(!reason.includes('adversarial'));
 });
 
+// isMeta user records (skill bodies, Stop-hook feedback) are not typed turns.
+function metaText(s, t) { return { type: 'user', isMeta: true, timestamp: ts(t), message: { role: 'user', content: [{ type: 'text', text: s }] } }; }
+const REASON = 'THREEBRAIN_AFTER_TASK: This task changed code. Before you finish...';
+
+test('(s) skill body (isMeta) after the hook reason does not reset the window -> silent', function () {
+  expectSilent(run(fixture([typed('fix', 0), EDIT(1), metaText('Stop hook feedback:\n' + REASON, 2),
+    metaText('Review target: run /simplify on the changes', 3), EDIT(4)])));
+});
+
+test('(t) edit before an isMeta skill body still counts -> block', function () {
+  expectBlock(run(fixture([typed('fix', 0), EDIT(1), metaText('Review target: run /simplify', 2)])));
+});
+
 let failed = 0;
 cases.forEach(function (c) {
   try { c[1](); console.log('ok   ' + c[0]); } catch (e) { failed++; console.log('FAIL ' + c[0] + '\n     ' + e.message); }

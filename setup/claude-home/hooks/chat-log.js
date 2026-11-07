@@ -46,7 +46,7 @@ const { execFileSync, spawn } = require('child_process');
 process.on('uncaughtException', function () { process.exit(0); });
 
 const {
-  SAFE_AGENT_ID, textOf, isTypedTurn, projectMutation,
+  SAFE_AGENT_ID, textOf, isPrompt, projectMutation,
   notifiedAgentIds, scanSubagent
 } = require(path.join(__dirname, 'lib', 'transcript.js'));
 
@@ -171,8 +171,7 @@ for (let i = lines.length - 1; i >= 0; i--) {
   try { rec = JSON.parse(lines[i]); } catch (_) { continue; }
   if (!rec || typeof rec !== 'object') continue;
   const content = rec.message && rec.message.content;
-  if (rec.type === 'user' && !rec.isMeta && isTypedTurn(content)
-      && textOf(content).indexOf('<task-notification>') === -1) { prompt = rec; break; }
+  if (isPrompt(rec) && textOf(content).indexOf('<task-notification>') === -1) { prompt = rec; break; }
   windowRecs.push(rec);
 }
 if (!prompt) done();
