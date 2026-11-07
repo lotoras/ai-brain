@@ -23,7 +23,9 @@ The agent sees only the brief, so make it self-contained:
   you gave;
 - the user's language;
 - the output path: `<scratchpad>/explain/<short-slug>.html`, written as an absolute path (the
-  scratchpad path from your environment section).
+  scratchpad path from your environment section). If your environment lists no scratchpad
+  (headless `claude -p`), use `<OS temp dir>/claude-explain/<short-slug>.html`; the after-task hooks
+  then count the page as a change, which is expected there.
 
 ## 3. Dispatch
 ```
