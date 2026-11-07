@@ -312,6 +312,32 @@ test('(I) same as (H) but the agent never wrote -> silent, file deleted', functi
   assert.ok(!fs.existsSync(deferredFile(tp)));
 });
 
+const SCRATCH = 'C:/Users/u/AppData/Local/Temp/claude/C--proj/0a1b2c3d-0000-4000-8000-123456789abc/scratchpad/explain/page.html';
+const SCRATCH_BS = SCRATCH.replace(/\//g, '\\');
+
+test('(p) main-loop Write to a scratchpad path only (forward + backslash) -> silent', function () {
+  [SCRATCH, SCRATCH_BS].forEach(function (p) {
+    expectSilent(run(fixture([typed('explain', 0), tool('Write', { file_path: p }, 1), text('done', 2)])));
+  });
+  expectSilent(run(fixture([typed('nb', 0), tool('NotebookEdit', { notebook_path: SCRATCH_BS }, 1)])));
+});
+
+test('(q) subagent Write to a scratchpad path only (after the boundary) -> silent', function () {
+  [SCRATCH, SCRATCH_BS].forEach(function (p) {
+    const tp = fixture(
+      [typed('delegate', 0), tool('Agent', { subagent_type: 'general-purpose', prompt: 'x' }, 1), agentResult('abc123', 10)],
+      { abc123: [tool('Write', { file_path: p }, 5)] });
+    expectSilent(run(tp));
+  });
+});
+
+test('(r) scratchpad Write + Edit on src/foo.js -> block, plain review', function () {
+  const reason = expectBlock(run(fixture([typed('go', 0), tool('Write', { file_path: SCRATCH }, 1),
+    tool('Edit', { file_path: 'C:\\app\\src\\foo.js' }, 2)])));
+  assert.ok(reason.includes('review --scope working-tree'));
+  assert.ok(!reason.includes('adversarial'));
+});
+
 let failed = 0;
 cases.forEach(function (c) {
   try { c[1](); console.log('ok   ' + c[0]); } catch (e) { failed++; console.log('FAIL ' + c[0] + '\n     ' + e.message); }

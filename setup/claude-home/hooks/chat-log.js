@@ -20,7 +20,7 @@
  * tool_use in the window, a codex:codex-rescue Agent, or a linked subagent (Agent
  * tool_result agentId, <task-id> notification, SendMessage) with a mutating tool_use
  * at/after the prompt. Read-only turns write nothing. Helpers: ./lib/transcript.js.
- * Files under Claude's session scratchpad are left out of the Files list.
+ * Writes under Claude's session scratchpad don't count as changes and never reach Files.
  *
  * Secrets of common shapes (sk-, ghp_, github_pat_, xox?-, AKIA, PEM private keys)
  * are redacted, and credentials are stripped from remote URLs, before writing.
@@ -46,7 +46,7 @@ const { execFileSync, spawn } = require('child_process');
 process.on('uncaughtException', function () { process.exit(0); });
 
 const {
-  MUTATING_TOOLS, SAFE_AGENT_ID, textOf, isTypedTurn, collectPaths,
+  SAFE_AGENT_ID, textOf, isTypedTurn, projectMutation,
   notifiedAgentIds, scanSubagent
 } = require(path.join(__dirname, 'lib', 'transcript.js'));
 
@@ -57,8 +57,6 @@ const MAX_TITLE = 100;
 const MAX_FILES = 30;
 const LOCK_STALE_MS = 2 * 60 * 1000;
 const END = '<!-- /turn -->';
-// Claude's per-session scratchpad (<tmp>/claude/<project>/<session uuid>/scratchpad/...) is noise.
-const SCRATCHPAD = /\/claude\/[^/]+\/[0-9a-f-]{36}\/scratchpad\//i;
 const SECRETS = [
   /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g,
   /sk-[A-Za-z0-9_-]{20,}/g,
@@ -196,9 +194,8 @@ for (const rec of windowRecs) {
     if (!part) continue;
     if (part.type === 'text' && typeof part.text === 'string' && part.text.trim()) result = part.text.trim();
     if (part.type !== 'tool_use') continue;
-    if (MUTATING_TOOLS.has(part.name)) {
+    if (projectMutation(part, changedPaths)) {
       changed = true;
-      collectPaths(part, changedPaths);
     } else if (part.name === 'Agent' && part.input && part.input.subagent_type === 'codex:codex-rescue') {
       changed = true; // Codex writes via Bash — invisible to tool scanning
     } else if (part.name === 'SendMessage' && part.input && typeof part.input.to === 'string') {
@@ -231,7 +228,6 @@ const topFwd = top ? fwd(top).replace(/\/+$/, '') : '';
 const files = [];
 changedPaths.forEach(function (p) {
   let rel = fwd(p);
-  if (SCRATCHPAD.test(rel)) return;
   if (topFwd) {
     const a = process.platform === 'win32' ? rel.toLowerCase() : rel;
     const b = process.platform === 'win32' ? topFwd.toLowerCase() : topFwd;

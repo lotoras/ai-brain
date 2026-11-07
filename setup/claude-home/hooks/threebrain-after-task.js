@@ -5,7 +5,7 @@
  *
  * Fires ONLY when this task is confirmed to have changed code — i.e. an
  * Edit/Write/MultiEdit/NotebookEdit tool_use is found since the last typed user
- * turn — to ask whether to run a threebrain pass over the changes
+ * turn (scratchpad-only writes don't count) — to ask whether to run a threebrain pass over the changes
  * (Simplify / Review / Review + Simplify / No) before it finishes. In every other
  * case it stays silent: read-only / Q&A tasks AND any case where history can't be
  * inspected (no/unreadable transcript). Strict allow-list — when in doubt, silent.
@@ -13,8 +13,8 @@
  * Order: "Review + Simplify" runs the Review first, fixes the accepted findings in the
  * main loop, and runs Simplify LAST (so the final code is the simplified one).
  *
- * Sensitive paths: the file_path / notebook_path of every mutating tool_use is
- * collected. If any matches src/auth/, /migrations/ or /billing/ (also at the path
+ * Sensitive paths: the non-scratchpad file_path / notebook_path of every mutating
+ * tool_use is collected. If any matches src/auth/, /migrations/ or /billing/ (also at the path
  * start; `\` normalised to `/`), the Review option becomes the adversarial review.
  *
  * Delegated edits: subagent turns are NOT in the main transcript. They live in
@@ -74,7 +74,7 @@ process.on('uncaughtException', function () { process.exit(0); });
 
 // Shared transcript helpers (required after the handler, so a missing lib fails open).
 const {
-  MUTATING_TOOLS, SAFE_AGENT_ID, textOf, isTypedTurn, collectPaths,
+  SAFE_AGENT_ID, textOf, isTypedTurn, projectMutation,
   subagentPath, notifiedAgentIds, scanSubagent
 } = require(path.join(__dirname, 'lib', 'transcript.js'));
 
@@ -229,7 +229,7 @@ try {
 }
 
 let changedCode = false;
-const changedPaths = [];       // file_path / notebook_path of every mutating tool_use seen
+const changedPaths = [];       // non-scratchpad target paths of every mutating tool_use seen
 const agentIds = new Set();    // subagents whose own transcripts must be scanned
 let boundaryTs = NaN;          // ms epoch of the typed user turn that ends the window
 let blindSpot = false;         // lookback was cut short by an unparseable line
@@ -259,9 +259,8 @@ for (let i = lines.length - 1; i >= 0; i--) {
   if (msg.type === 'assistant' && Array.isArray(content)) {
     for (const part of content) {
       if (!part || part.type !== 'tool_use') continue;
-      if (MUTATING_TOOLS.has(part.name)) {
+      if (projectMutation(part, changedPaths)) {
         changedCode = true;
-        collectPaths(part, changedPaths);
       } else if (part.name === 'Agent' && part.input
           && part.input.subagent_type === 'codex:codex-rescue') {
         changedCode = true; // Codex writes via Bash — invisible to tool scanning

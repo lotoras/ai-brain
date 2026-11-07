@@ -24,6 +24,18 @@ The Workflow tool only accepts an opt-in delivered as session context, so `sessi
 injects it as `SESSION_WORKFLOW_POLICY` at every session start. Keep that block in sync with this
 section.
 
+## How to talk to me (any project)
+Write about 80% of the way to ASD-STE100 (Simplified Technical English):
+- Short sentences (about 20 words max), one idea each, active voice, simple verbs.
+- One word for one thing: keep a term once you use it; no synonyms for variety.
+- No idioms, metaphors or filler. Give the result first, then the reason.
+- Steps as numbered lists; put the condition first ("If X, do Y").
+- The 20% slack: technical terms, code names and normal flow are fine; never sound robotic.
+This applies to all prose I read: answers, plans, questions, summaries and explainer pages.
+
+For more explanation, use the **explain** skill (a diagram or HTML page that opens in Chrome).
+After a long or complex answer, offer one in one line; never for short answers.
+
 ## Admin & system steps (any project)
 Run admin and system steps yourself; I only click the confirm windows. Elevate from your own shell with
 `Start-Process powershell -Verb RunAs -Wait -ArgumentList ...` (log stdout to a scratchpad file and read it back), so Windows

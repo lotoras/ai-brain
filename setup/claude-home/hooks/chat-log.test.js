@@ -335,6 +335,40 @@ test('16 turn markers inside prompt/result text cannot split the block on rerun'
   assert.strictEqual(count(s, '<!-- /turn -->'), 1, 'only the real end marker');
 });
 
+const SCRATCH = 'C:/Users/u/AppData/Local/Temp/claude/C--proj/0a1b2c3d-0000-4000-8000-123456789abc/scratchpad/explain/page.html';
+const SCRATCH_BS = SCRATCH.replace(/\//g, '\\');
+
+test('17 main-loop Write to a scratchpad path only -> nothing written', function () {
+  [SCRATCH, SCRATCH_BS].forEach(function (p) {
+    const h = fakeHome(), cwd = repoWithCommit();
+    const tp = fixture([typed('explain it', 0), tool('Write', { file_path: p }, 1), text('explained', 2)]);
+    run(h, tp, cwd);
+    assert.deepStrictEqual(yearDirs(h), []);
+  });
+});
+
+test('18 subagent-only scratchpad Write after the prompt -> nothing written', function () {
+  [SCRATCH, SCRATCH_BS].forEach(function (p) {
+    const h = fakeHome(), cwd = repoWithCommit();
+    const tp = fixture([typed('delegate', 0), tool('Agent', { subagent_type: 'general-purpose', prompt: 'x' }, 1),
+      agentResult('abc123', 10), text('delegated', 11)],
+    { abc123: [tool('Write', { file_path: p }, 5)] });
+    run(h, tp, cwd);
+    assert.deepStrictEqual(yearDirs(h), []);
+  });
+});
+
+test('19 scratchpad Write + repo Edit -> block written, Files lists only the repo file', function () {
+  const h = fakeHome(), cwd = repoWithCommit();
+  const tp = fixture([typed('do both', 0, 'uuid-19'), tool('Write', { file_path: SCRATCH_BS }, 1),
+    tool('Edit', { file_path: path.join(cwd, 'src', 'a.js') }, 2), text('done', 3)]);
+  run(h, tp, cwd);
+  const s = readSession(h, cwd, 0);
+  assert.strictEqual(count(s, '<!-- turn:uuid-19 -->'), 1);
+  assert.ok(s.includes('src/a.js'), 'repo file');
+  assert.ok(!s.includes('scratchpad') && !s.includes('page.html'), 'scratchpad leaked');
+});
+
 let pass = 0, fail = 0;
 cases.forEach(function (c) {
   try { c[1](); pass++; console.log('ok   ' + c[0]); }

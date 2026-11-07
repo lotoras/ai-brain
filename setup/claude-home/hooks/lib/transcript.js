@@ -4,6 +4,11 @@
  * (threebrain-after-task.js, chat-log.js). Node built-ins only; every helper is
  * fail-silent (a missing or unreadable file reads as "nothing found").
  *
+ * "Changed code" means a mutating tool_use (Edit / Write / MultiEdit / NotebookEdit) with at
+ * least one target path outside Claude's per-session scratchpad
+ * (<tmp>/claude/<project>/<session uuid>/scratchpad/...): scratchpad files are throwaway
+ * (explainer pages, probes), so a scratchpad-only write is not a code change.
+ *
  * Subagent turns are NOT in the main transcript. They live in
  *   <dir of transcript_path>/<transcript basename without .jsonl>/subagents/agent-<agentId>.jsonl
  * next to an agent-<agentId>.meta.json (background Bash tasks have no meta file).
@@ -13,6 +18,8 @@ const fs = require('fs');
 const path = require('path');
 
 const MUTATING_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
+// Claude's per-session scratchpad (<tmp>/claude/<project>/<session uuid>/scratchpad/...).
+const SCRATCHPAD = /\/claude\/[^/]+\/[0-9a-f-]{36}\/scratchpad\//i;
 // Agent ids end up in a file name: accept only plain id characters (no path separators).
 const SAFE_AGENT_ID = /^[A-Za-z0-9_.-]+$/;
 
@@ -34,12 +41,19 @@ function isTypedTurn(content) {
     || (Array.isArray(content) && content.some(function (p) { return p && p.type === 'text'; }));
 }
 
-// Record a mutating tool_use's target path (file_path, or notebook_path for NotebookEdit).
-function collectPaths(part, paths) {
+// A mutating tool_use that touches at least one file outside the scratchpad (a call with no
+// path counts). Pushes its non-scratchpad target paths (file_path / notebook_path, `\` → `/`).
+function projectMutation(part, paths) {
+  if (!part || part.type !== 'tool_use' || !MUTATING_TOOLS.has(part.name)) return false;
   const inp = part.input || {};
+  let any = false, kept = false;
   [inp.file_path, inp.notebook_path].forEach(function (p) {
-    if (typeof p === 'string' && p) paths.push(p.replace(/\\/g, '/'));
+    if (typeof p !== 'string' || !p) return;
+    any = true;
+    p = p.replace(/\\/g, '/');
+    if (!SCRATCHPAD.test(p)) { kept = true; paths.push(p); }
   });
+  return !any || kept;
 }
 
 // <dir of transcript>/<session>/subagents/<name>
@@ -66,7 +80,7 @@ function notifiedAgentIds(tpath, text) {
   return ids;
 }
 
-// Read one subagent transcript and report its mutating tool_use at/after `since`
+// Read one subagent transcript and report its project mutation at/after `since`
 // (ms epoch; NaN = no boundary, count all). Missing/unreadable file -> nothing.
 function scanSubagent(tpath, agentId, since, paths) {
   let found = false;
@@ -84,10 +98,7 @@ function scanSubagent(tpath, agentId, since, paths) {
         if (isNaN(t) || t < since) continue; // unknowable age -> don't count (allow-list)
       }
       for (const part of c) {
-        if (part && part.type === 'tool_use' && MUTATING_TOOLS.has(part.name)) {
-          found = true;
-          collectPaths(part, paths);
-        }
+        if (projectMutation(part, paths)) found = true;
       }
     }
   } catch (_) { /* missing subagent file: nothing to add */ }
@@ -95,6 +106,6 @@ function scanSubagent(tpath, agentId, since, paths) {
 }
 
 module.exports = {
-  MUTATING_TOOLS, SAFE_AGENT_ID, textOf, isTypedTurn, collectPaths,
+  SAFE_AGENT_ID, textOf, isTypedTurn, projectMutation,
   subagentPath, isAgent, notifiedAgentIds, scanSubagent
 };
